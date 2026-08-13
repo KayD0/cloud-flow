@@ -51,3 +51,4 @@ Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順
 ## テンプレートカテゴリ
 
 - [Compute & Scaling](docs/template-categories/compute-scaling.md)
+- [Data & Storage](docs/template-categories/data-and-storage.md) — データの保存、取得、複製と、Reliability & Recovery との分類境界
