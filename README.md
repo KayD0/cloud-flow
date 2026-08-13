@@ -52,3 +52,4 @@ Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順
 
 - [Compute & Scaling](docs/template-categories/compute-scaling.md)
 - [Data & Storage](docs/template-categories/data-and-storage.md) — データの保存、取得、複製と、Reliability & Recovery との分類境界
+- [Security](docs/template-categories/security.md) — 信頼境界、認証・認可、検査、許可・拒否を扱うカテゴリの掲載基準
