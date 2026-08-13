@@ -8,6 +8,7 @@ import {
   type WeightedRequest,
 } from "@/lib/scenarios/traffic-routing/weighted-routing/weighted-routing-scenario";
 import styles from "./weighted-routing-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const TARGETS: Record<Destination, { x: number; y: number }> = {
   stable: { x: 760, y: 135 },
@@ -37,7 +38,7 @@ function requestPosition(request: WeightedRequest) {
 }
 
 export function WeightedRoutingDemo() {
-  const [state, dispatch] = useReducer(weightedRoutingReducer, initialWeightedRoutingState);
+  const [state, dispatch] = useReducer(weightedRoutingReducer, initialWeightedRoutingState, (initial) => weightedRoutingReducer(initial, { type: "start" }));
   const totalWeight = state.weights.stable + state.weights.canary;
   const stableRatio = totalWeight === 0 ? 0 : Math.round((state.weights.stable / totalWeight) * 100);
   const canaryRatio = totalWeight === 0 ? 0 : 100 - stableRatio;
@@ -57,6 +58,8 @@ export function WeightedRoutingDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 300);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="weighted-demo-title">

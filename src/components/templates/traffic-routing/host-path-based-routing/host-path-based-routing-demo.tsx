@@ -8,6 +8,7 @@ import {
   type BackendId,
 } from "@/lib/scenarios/traffic-routing/host-path-based-routing/host-path-based-routing-scenario";
 import styles from "./host-path-based-routing-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const backendLabels: Record<BackendId, string> = {
   web: "Web Backend",
@@ -25,7 +26,7 @@ const phaseLabels = {
 } as const;
 
 export function HostPathBasedRoutingDemo() {
-  const [state, dispatch] = useReducer(routingReducer, initialRoutingState);
+  const [state, dispatch] = useReducer(routingReducer, initialRoutingState, (initial) => routingReducer(initial, { type: "start" }));
   const rules = orderedRules(state.rules);
 
   useEffect(() => {
@@ -37,6 +38,8 @@ export function HostPathBasedRoutingDemo() {
   const activeRuleId = state.evaluationIndex === null ? null : rules[state.evaluationIndex]?.id;
   const flowReachedRules = ["evaluating", "matched", "delivered", "no-match"].includes(state.phase);
   const controlsDisabled = state.playback === "running";
+
+  useTemplateLoop(state.phase === "delivered" || state.phase === "no-match", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="routing-demo-title">

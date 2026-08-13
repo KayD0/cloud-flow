@@ -6,12 +6,13 @@ import {
   type AccessActor, type StorageOperation, type StorageType,
 } from "@/lib/scenarios/data-storage/object-block-file-storage/object-block-file-storage-scenario";
 import styles from "./object-block-file-storage-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const STORAGE_LABELS: Record<StorageType, string> = { object: "Object", block: "Block", file: "File" };
 const OUTCOME_LABELS = { waiting: "READY", saved: "SAVED", retrieved: "RETRIEVED", blocked: "ACCESS BLOCKED" } as const;
 
 export function ObjectBlockFileStorageDemo() {
-  const [state, dispatch] = useReducer(storageScenarioReducer, initialStorageScenarioState);
+  const [state, dispatch] = useReducer(storageScenarioReducer, initialStorageScenarioState, (initial) => storageScenarioReducer(initial, { type: "start" }));
   const detail = getStorageDetail(state.storageType);
   useEffect(() => {
     if (state.playback !== "running") return;
@@ -20,6 +21,8 @@ export function ObjectBlockFileStorageDemo() {
   }, [state.playback]);
   const actorLabel = state.actor === "application" ? "Application" : "VM";
   const operationLabel = state.operation === "write" ? "Save" : "Retrieve";
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="storage-demo-title">

@@ -3,12 +3,13 @@
 import { useEffect, useReducer } from "react";
 import { dnsScenarioReducer, initialDnsScenarioState, phaseDescriptions } from "@/lib/scenarios/traffic-routing/dns-resolution-and-failover/dns-resolution-and-failover-scenario";
 import styles from "./dns-resolution-and-failover-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const endpointLabel = { primary: "Primary", secondary: "Secondary" } as const;
 const TOKEN_X = [115, 325, 535, 790] as const;
 
 export function DnsResolutionAndFailoverDemo() {
-  const [state, dispatch] = useReducer(dnsScenarioReducer, initialDnsScenarioState);
+  const [state, dispatch] = useReducer(dnsScenarioReducer, initialDnsScenarioState, (initial) => dnsScenarioReducer(initial, { type: "start" }));
   const status = phaseDescriptions[state.phase];
   const tokenY = state.requestStep < 3 ? 225 : state.cachedRecord === "secondary" ? 345 : 105;
 
@@ -17,6 +18,8 @@ export function DnsResolutionAndFailoverDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 850);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+
+  useTemplateLoop(state.requestStep >= 4, () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="dns-demo-title">

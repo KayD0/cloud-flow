@@ -3,11 +3,12 @@
 import { useEffect, useReducer } from "react";
 import { getStateExplanation, initialPrimaryReplicaState, primaryReplicaReducer } from "@/lib/scenarios/data-storage/primary-and-read-replica/primary-and-read-replica-scenario";
 import styles from "./primary-and-read-replica-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const outcomeLabels = { waiting: "READY", "write-replicated": "REPLICATED · v2", "read-fresh": "FRESH READ · v2", "read-stale": "STALE READ · v1" } as const;
 
 export function PrimaryAndReadReplicaDemo() {
-  const [state, dispatch] = useReducer(primaryReplicaReducer, initialPrimaryReplicaState);
+  const [state, dispatch] = useReducer(primaryReplicaReducer, initialPrimaryReplicaState, (initial) => primaryReplicaReducer(initial, { type: "start" }));
   useEffect(() => {
     if (state.playback !== "running") return;
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 800);
@@ -17,6 +18,8 @@ export function PrimaryAndReadReplicaDemo() {
   const primaryRead = state.operation === "read" && state.readTarget === "primary";
   const replicaRead = state.operation === "read" && state.readTarget === "replica";
   const active = (step: number) => state.step >= step;
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="primary-replica-demo-title">

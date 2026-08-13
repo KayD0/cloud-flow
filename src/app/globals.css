@@ -68,7 +68,32 @@ a:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: 3
 .empty-state h2 { margin: .8rem 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }
 .empty-state > p:last-of-type { max-width: 600px; margin: 0 auto 1.5rem; color: var(--muted); line-height: 1.7; }
 .empty-state a { color: var(--accent); font-weight: 650; }
-.template-detail-hero { padding-bottom: 3rem; }
-.template-detail-hero .tag-list { margin-top: 1.5rem; }
+.template-detail-hero { padding: clamp(2.5rem, 6vw, 4.5rem) 0 2rem; }
+.template-detail-hero h1 { font-size: clamp(2.5rem, 6vw, 4.8rem); }
+.template-detail-hero .tag-list { margin-top: 1.25rem; }
+.detail-shell [aria-label="シナリオ操作"],
+.detail-shell [aria-label="再生操作"],
+.detail-shell [aria-label="カテゴリとシナリオの説明"],
+.detail-shell [aria-label="カテゴリと安全性の説明"],
+.detail-shell aside[class*="learning"],
+.detail-shell aside[class*="explanation"],
+.detail-shell [class*="learningNote"],
+.detail-shell [class*="learningNotes"],
+.detail-shell [class*="explanation"],
+.detail-shell footer[class*="note"],
+.detail-shell [class*="statusPanel"],
+.detail-shell [class*="stateMessage"],
+.detail-shell [class*="statusBar"],
+.detail-shell [class*="statusBadge"],
+.detail-shell [class*="stateBadge"],
+.detail-shell [class*="statePanel"],
+.detail-shell [class*="timeline"],
+.detail-shell [class*="boundaryCase"],
+.detail-shell [class*="description"] { display: none !important; }
+.detail-shell [class*="eyebrow"] { font-size: 0 !important; }
+.detail-shell [class*="eyebrow"]::after { content: "TEMPLATE PREVIEW"; font-size: .68rem; }
+@media (max-width: 760px) {
+  .detail-shell svg[class*="canvas"] { width: 100% !important; min-width: 0 !important; min-height: 0 !important; height: auto; }
+}
 @media (max-width: 760px) { .site-header { padding-inline: .9rem; } .site-header nav a:first-child { display: none; } .page-shell { width: min(100% - 1.5rem, 1180px); } .hero { padding-top: 4.5rem; } .section-heading { align-items: start; flex-direction: column; } .category-grid { grid-template-columns: 1fr; } .category-card { min-height: 180px; padding: 1.35rem; } .template-metadata { grid-template-columns: 1fr; } .template-metadata div { padding: 1rem 0; } .template-metadata div + div { padding-left: 0; border-top: 1px solid var(--border); border-left: 0; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

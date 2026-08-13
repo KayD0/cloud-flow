@@ -9,6 +9,7 @@ import {
   type CachePreset,
 } from "@/lib/scenarios/data-storage/cache-hit-miss/cache-hit-miss-scenario";
 import styles from "./cache-hit-miss-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const STATE_LABELS = { idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED" } as const;
 const PRESET_LABELS: Record<CachePreset, string> = { cold: "Cold（値なし）", warm: "Warm（有効）", expired: "Expired（期限切れ）" };
@@ -33,7 +34,7 @@ function isActive(phase: CachePhase, targets: CachePhase[]) {
 }
 
 export function CacheHitMissDemo() {
-  const [state, dispatch] = useReducer(cacheHitMissReducer, initialCacheHitMissState);
+  const [state, dispatch] = useReducer(cacheHitMissReducer, initialCacheHitMissState, (initial) => cacheHitMissReducer(initial, { type: "start" }));
   const cacheStatus = !state.cacheHasValue ? "EMPTY" : state.cacheAge >= state.ttl ? "EXPIRED" : "FRESH";
   const settingsDisabled = state.playback !== "idle";
 
@@ -42,6 +43,8 @@ export function CacheHitMissDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 650);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="cache-demo-title">

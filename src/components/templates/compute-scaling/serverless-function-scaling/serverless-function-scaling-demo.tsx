@@ -10,6 +10,7 @@ import {
   type PlaybackSpeed,
 } from "@/lib/scenarios/compute-scaling/serverless-function-scaling/serverless-function-scaling-scenario";
 import styles from "./serverless-function-scaling-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const phases: { key: FlowPhase; label: string; detail: string }[] = [
   { key: "invocation", label: "Invocation", detail: "synthetic calls" },
@@ -21,7 +22,7 @@ const phases: { key: FlowPhase; label: string; detail: string }[] = [
 const playbackLabels = { idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED" } as const;
 
 export function ServerlessFunctionScalingDemo() {
-  const [state, dispatch] = useReducer(serverlessScalingReducer, initialServerlessScalingState);
+  const [state, dispatch] = useReducer(serverlessScalingReducer, initialServerlessScalingState, (initial) => serverlessScalingReducer(initial, { type: "start" }));
   const snapshot = getScalingSnapshot(state);
 
   useEffect(() => {
@@ -33,6 +34,8 @@ export function ServerlessFunctionScalingDemo() {
   const visibleFunctions = state.phase === "idle"
     ? Math.min(state.completedCount, state.concurrencyLimit)
     : snapshot.activeCount;
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="serverless-scaling-title">

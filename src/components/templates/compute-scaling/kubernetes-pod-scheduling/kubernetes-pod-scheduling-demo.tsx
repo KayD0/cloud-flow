@@ -3,12 +3,13 @@
 import { useEffect, useReducer } from "react";
 import { initialKubernetesPodSchedulingState, kubernetesPodSchedulingReducer, phaseLabels, type PodPhase } from "@/lib/scenarios/compute-scaling/kubernetes-pod-scheduling/kubernetes-pod-scheduling-scenario";
 import styles from "./kubernetes-pod-scheduling-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const playbackLabels = { idle: "READY", running: "SCHEDULING", paused: "PAUSED", completed: "COMPLETED", blocked: "UNSCHEDULABLE" } as const;
 const phases: PodPhase[] = ["pending", "scheduler", "selected", "starting", "ready"];
 
 export function KubernetesPodSchedulingDemo() {
-  const [state, dispatch] = useReducer(kubernetesPodSchedulingReducer, initialKubernetesPodSchedulingState);
+  const [state, dispatch] = useReducer(kubernetesPodSchedulingReducer, initialKubernetesPodSchedulingState, (initial) => kubernetesPodSchedulingReducer(initial, { type: "start" }));
   const readyPods = state.pods.filter((pod) => pod.phase === "ready");
   const nodePods = state.pods.filter((pod) => ["selected", "starting", "ready"].includes(pod.phase));
   const currentPod = state.pods.find((pod) => pod.id === state.activePodId) ?? state.pods.find((pod) => pod.phase === "pending");
@@ -18,6 +19,8 @@ export function KubernetesPodSchedulingDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 900);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+
+  useTemplateLoop(state.playback === "completed" || state.playback === "blocked", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="scheduling-demo-title">

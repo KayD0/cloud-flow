@@ -13,13 +13,21 @@ import styles from "./container-lifecycle-demo.module.css";
 const PLAYBACK_LABELS = { idle: "IDLE", running: "PLAYING", paused: "PAUSED" } as const;
 
 export function ContainerLifecycleDemo() {
-  const [state, dispatch] = useReducer(containerLifecycleReducer, initialContainerLifecycleState);
+  const [state, dispatch] = useReducer(containerLifecycleReducer, initialContainerLifecycleState, (initial) =>
+    containerLifecycleReducer(containerLifecycleReducer(initial, { type: "play" }), { type: "start-container" }),
+  );
   const currentStage = getContainerStage(state.stage);
   const activeIndex = CONTAINER_STAGES.findIndex((stage) => stage.id === state.stage);
 
   useEffect(() => {
     if (state.playback !== "running" || !["starting", "processing", "restarting"].includes(state.stage)) return;
     const timer = window.setTimeout(() => dispatch({ type: "tick" }), lifecycleTickMilliseconds);
+    return () => window.clearTimeout(timer);
+  }, [state.playback, state.stage]);
+
+  useEffect(() => {
+    if (state.playback !== "running" || state.stage !== "ready") return;
+    const timer = window.setTimeout(() => dispatch({ type: "submit-job" }), 1400);
     return () => window.clearTimeout(timer);
   }, [state.playback, state.stage]);
 

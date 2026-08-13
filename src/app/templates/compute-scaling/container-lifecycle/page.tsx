@@ -17,7 +17,7 @@ export default function ContainerLifecyclePage() {
           <span aria-current="page">{template.name}</span>
         </nav>
         <header className="category-hero template-detail-hero">
-          <p className="hero-kicker"><span /> INTERACTIVE TEMPLATE</p>
+          <p className="hero-kicker"><span /> INFRASTRUCTURE TEMPLATE</p>
           <h1>{template.name}</h1>
           <p>{template.summary}</p>
           <ul className="tag-list" aria-label="補助タグ">

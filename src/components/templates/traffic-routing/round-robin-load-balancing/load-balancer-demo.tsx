@@ -62,7 +62,7 @@ function getStateMessage(state: LoadBalancerState) {
 }
 
 export function LoadBalancerDemo() {
-  const [state, dispatch] = useReducer(loadBalancerReducer, initialLoadBalancerState);
+  const [state, dispatch] = useReducer(loadBalancerReducer, initialLoadBalancerState, (initial) => loadBalancerReducer(initial, { type: "start" }));
   const stateMessage = getStateMessage(state);
 
   useEffect(() => {

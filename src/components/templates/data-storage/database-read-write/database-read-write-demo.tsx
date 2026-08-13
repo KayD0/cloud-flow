@@ -9,13 +9,14 @@ import {
   initialDatabaseReadWriteState,
 } from "@/lib/scenarios/data-storage/database-read-write/database-read-write-scenario";
 import styles from "./database-read-write-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const PLAYBACK_LABELS = {
   idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED", "not-found": "NOT FOUND",
 } as const;
 
 export function DatabaseReadWriteDemo() {
-  const [state, dispatch] = useReducer(databaseReadWriteReducer, initialDatabaseReadWriteState);
+  const [state, dispatch] = useReducer(databaseReadWriteReducer, initialDatabaseReadWriteState, (initial) => databaseReadWriteReducer(initial, { type: "start" }));
   const stages = getStages(state.operation);
   const stage = stages[state.stageIndex];
   const terminal = state.playback === "completed" || state.playback === "not-found";
@@ -30,6 +31,8 @@ export function DatabaseReadWriteDemo() {
   }, [state.playback, state.stageIndex, state.delayMode]);
 
   const detail = state.playback === "not-found" ? state.result : stage.detail;
+
+  useTemplateLoop(terminal, () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="database-demo-title">

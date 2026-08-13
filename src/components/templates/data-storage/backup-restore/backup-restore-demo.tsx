@@ -8,6 +8,7 @@ import {
   initialBackupRestoreState,
 } from "@/lib/scenarios/data-storage/backup-restore/backup-restore-scenario";
 import styles from "./backup-restore-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const phaseLabels = {
   idle: "READY",
@@ -18,7 +19,7 @@ const phaseLabels = {
 } as const;
 
 export function BackupRestoreDemo() {
-  const [state, dispatch] = useReducer(backupRestoreReducer, initialBackupRestoreState);
+  const [state, dispatch] = useReducer(backupRestoreReducer, initialBackupRestoreState, (initial) => backupRestoreReducer(initial, { type: "start-restore" }));
   const selected = getSelectedGeneration(state);
 
   useEffect(() => {
@@ -29,6 +30,8 @@ export function BackupRestoreDemo() {
 
   const backupActive = state.operation === "backup" && state.phase !== "idle";
   const restoreActive = state.operation === "restore" && state.phase !== "idle";
+
+  useTemplateLoop(state.phase === "completed" || state.phase === "failed", () => { dispatch({ type: "reset" }); dispatch({ type: "start-restore" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="backup-restore-title">

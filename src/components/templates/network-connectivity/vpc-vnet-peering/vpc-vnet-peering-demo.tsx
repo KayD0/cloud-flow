@@ -7,9 +7,10 @@ import {
   vpcVnetPeeringReducer,
 } from "@/lib/scenarios/network-connectivity/vpc-vnet-peering/vpc-vnet-peering-scenario";
 import styles from "./vpc-vnet-peering-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 export function VpcVnetPeeringDemo() {
-  const [state, dispatch] = useReducer(vpcVnetPeeringReducer, initialVpcVnetPeeringState);
+  const [state, dispatch] = useReducer(vpcVnetPeeringReducer, initialVpcVnetPeeringState, (initial) => vpcVnetPeeringReducer(initial, { type: "start" }));
   const isReverse = state.direction === "b-to-a";
   const packetX = isReverse ? 790 - state.progress * 680 : 110 + state.progress * 680;
 
@@ -18,6 +19,8 @@ export function VpcVnetPeeringDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 260);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+
+  useTemplateLoop(state.result === "reachable" || state.result === "blocked", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="peering-demo-title">

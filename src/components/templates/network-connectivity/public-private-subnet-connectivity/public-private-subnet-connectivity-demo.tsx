@@ -3,6 +3,7 @@
 import { useEffect, useReducer } from "react";
 import { initialPublicPrivateSubnetState, publicPrivateSubnetReducer, type ConnectionSource, type ConnectionTarget } from "@/lib/scenarios/network-connectivity/public-private-subnet-connectivity/public-private-subnet-connectivity-scenario";
 import styles from "./public-private-subnet-connectivity-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const sourceLabels: Record<ConnectionSource, string> = { internet: "Internet", internal: "Internal Client" };
 const targetLabels: Record<ConnectionTarget, string> = { public: "Public Subnet Resource", private: "Private Subnet Resource" };
@@ -18,7 +19,7 @@ function packetPosition(source: ConnectionSource, target: ConnectionTarget, step
 }
 
 export function PublicPrivateSubnetConnectivityDemo() {
-  const [state, dispatch] = useReducer(publicPrivateSubnetReducer, initialPublicPrivateSubnetState);
+  const [state, dispatch] = useReducer(publicPrivateSubnetReducer, initialPublicPrivateSubnetState, (initial) => publicPrivateSubnetReducer(initial, { type: "start" }));
   const position = packetPosition(state.source, state.target, state.step);
 
   useEffect(() => {
@@ -26,6 +27,8 @@ export function PublicPrivateSubnetConnectivityDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 850);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+
+  useTemplateLoop(state.playback === "completed" || state.playback === "blocked", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="subnet-demo-title">

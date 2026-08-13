@@ -10,6 +10,7 @@ import {
   type GatewayId,
 } from "@/lib/scenarios/network-connectivity/internet-gateway-and-nat-gateway/internet-gateway-and-nat-gateway-scenario";
 import styles from "./internet-gateway-and-nat-gateway-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const phaseLabels = {
   idle: "READY",
@@ -28,7 +29,7 @@ const nodeKinds: Record<string, string> = {
 };
 
 export function InternetGatewayAndNatGatewayDemo() {
-  const [state, dispatch] = useReducer(gatewayScenarioReducer, initialGatewayScenarioState);
+  const [state, dispatch] = useReducer(gatewayScenarioReducer, initialGatewayScenarioState, (initial) => gatewayScenarioReducer(initial, { type: "start" }));
 
   useEffect(() => {
     if (state.phase !== "running") return;
@@ -43,6 +44,8 @@ export function InternetGatewayAndNatGatewayDemo() {
   function setGateway(gateway: GatewayId) {
     dispatch({ type: "set-gateway", gateway, enabled: !gatewayEnabled(gateway) });
   }
+
+  useTemplateLoop(state.phase === "completed" || state.phase === "blocked", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="gateway-demo-title">

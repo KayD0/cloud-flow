@@ -8,7 +8,7 @@ const PLAYBACK_LABEL = { idle: "READY", running: "RUNNING", paused: "PAUSED" } a
 const STATUS_LABEL = { ready: "READY", launching: "LAUNCHING", draining: "DRAINING" } as const;
 
 export function VmAutoScalingDemo() {
-  const [state, dispatch] = useReducer(vmAutoScalingReducer, initialVmAutoScalingState);
+  const [state, dispatch] = useReducer(vmAutoScalingReducer, initialVmAutoScalingState, (initial) => vmAutoScalingReducer(initial, { type: "start" }));
   const readyCount = state.instances.filter((instance) => instance.status === "ready").length;
 
   useEffect(() => {

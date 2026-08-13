@@ -9,6 +9,7 @@ import {
   requestResponseFlowReducer,
 } from "@/lib/scenarios/traffic-routing/request-response-flow/request-response-flow-scenario";
 import styles from "./request-response-flow-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const TOKEN_POSITIONS = [100, 450, 800, 450, 100] as const;
 const PLAYBACK_LABELS = {
@@ -16,7 +17,7 @@ const PLAYBACK_LABELS = {
 } as const;
 
 export function RequestResponseFlowDemo() {
-  const [state, dispatch] = useReducer(requestResponseFlowReducer, initialRequestResponseFlowState);
+  const [state, dispatch] = useReducer(requestResponseFlowReducer, initialRequestResponseFlowState, (initial) => requestResponseFlowReducer(initial, { type: "start" }));
   const stage = getCurrentStage(state);
   const terminal = state.playback === "completed" || state.playback === "failed";
 
@@ -32,6 +33,8 @@ export function RequestResponseFlowDemo() {
   const explanation = state.playback === "failed"
     ? "Backend の説明用タイムアウトにより Response を生成できませんでした。Reset して再試行してください。"
     : stage.detail;
+
+  useTemplateLoop(terminal, () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="flow-demo-title">

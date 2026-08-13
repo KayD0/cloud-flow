@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { initialRollingUpdateState, rollingUpdateReducer, type RollingUpdateStage } from "@/lib/scenarios/compute-scaling/kubernetes-rolling-update/kubernetes-rolling-update-scenario";
 import styles from "./kubernetes-rolling-update-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const STAGES: RollingUpdateStage[] = ["current", "new-replica-set", "pod-replacement", "old-retired"];
 const STAGE_LABELS: Record<RollingUpdateStage, string> = {
@@ -15,7 +16,7 @@ const SPEEDS = { slow: { label: "Slow", interval: 1500 }, normal: { label: "Norm
 type Speed = keyof typeof SPEEDS;
 
 export function KubernetesRollingUpdateDemo() {
-  const [state, dispatch] = useReducer(rollingUpdateReducer, initialRollingUpdateState);
+  const [state, dispatch] = useReducer(rollingUpdateReducer, initialRollingUpdateState, (initial) => rollingUpdateReducer(initial, { type: "start" }));
   const [speed, setSpeed] = useState<Speed>("normal");
   const totalReady = state.oldReady + state.newReady;
   const explanation = state.playback === "idle"
@@ -33,6 +34,8 @@ export function KubernetesRollingUpdateDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), SPEEDS[speed].interval);
     return () => window.clearInterval(timer);
   }, [speed, state.playback]);
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="rolling-update-title">

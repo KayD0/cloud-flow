@@ -13,7 +13,7 @@ function packetPosition(packet: Packet) {
 }
 
 export function SiteToSiteVpnConnectivityDemo() {
-  const [state, dispatch] = useReducer(vpnScenarioReducer, initialVpnScenarioState);
+  const [state, dispatch] = useReducer(vpnScenarioReducer, initialVpnScenarioState, (initial) => vpnScenarioReducer(initial, { type: "start" }));
   useEffect(() => {
     if (state.playback !== "running" && state.tunnel !== "connecting" && state.tunnel !== "disconnecting") return;
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 700);

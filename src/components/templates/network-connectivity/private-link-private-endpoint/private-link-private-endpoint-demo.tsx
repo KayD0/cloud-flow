@@ -7,6 +7,7 @@ import {
   privateEndpointReducer,
 } from "@/lib/scenarios/network-connectivity/private-link-private-endpoint/private-link-private-endpoint-scenario";
 import styles from "./private-link-private-endpoint-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const outcomeLabels = {
   waiting: "WAITING",
@@ -16,7 +17,7 @@ const outcomeLabels = {
 } as const;
 
 export function PrivateLinkPrivateEndpointDemo() {
-  const [state, dispatch] = useReducer(privateEndpointReducer, initialPrivateEndpointState);
+  const [state, dispatch] = useReducer(privateEndpointReducer, initialPrivateEndpointState, (initial) => privateEndpointReducer(initial, { type: "start" }));
 
   useEffect(() => {
     if (state.playback !== "running") return;
@@ -27,6 +28,8 @@ export function PrivateLinkPrivateEndpointDemo() {
   const privateActive = state.endpointEnabled && state.step >= 2;
   const publicActive = !state.endpointEnabled && state.comparePublicRoute && state.step >= 2;
   const blocked = state.outcome === "blocked";
+
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="private-link-demo-title">
