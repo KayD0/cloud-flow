@@ -27,6 +27,10 @@ Cloud Flow は、インフラ・クラウドの構成だけでなく、通信、
 
 アニメーションは MVP では React のタイマーで進むシナリオ状態を SVG に投影し、CSS transition で補間する。制御性を確認する最小構成であり、公開 API は固定しない。`prefers-reduced-motion` では補間とスクロールアニメーションを停止する。
 
+## テンプレートカテゴリ
+
+- [Reliability & Recovery](docs/template-categories/reliability-recovery.md) — 障害の検知、切り離し、復旧判断と復旧完了までの時間変化
+
 ## 開発
 
 ```bash
