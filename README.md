@@ -29,7 +29,14 @@ Cloud Flow は、インフラ・クラウドの構成だけでなく、通信、
 
 ## テンプレートカテゴリ
 
+- [Traffic & Routing](docs/template-categories/traffic-routing.md)
+- [Network & Connectivity](docs/template-categories/network-connectivity.md)
+- [Compute & Scaling](docs/template-categories/compute-scaling.md)
+- [Data & Storage](docs/template-categories/data-and-storage.md) — データの保存、取得、複製と、Reliability & Recovery との分類境界
+- [Messaging & Integration](docs/template-categories/messaging-integration.md) — 非同期通信における蓄積、配送、再試行の掲載基準と視覚表現
 - [Reliability & Recovery](docs/template-categories/reliability-recovery.md) — 障害の検知、切り離し、復旧判断と復旧完了までの時間変化
+- [Security](docs/template-categories/security.md) — 信頼境界、認証・認可、検査、許可・拒否を扱うカテゴリの掲載基準
+- [Observability & Operations](docs/template-categories/observability-operations.md)
 
 ## 開発
 
@@ -40,16 +47,6 @@ npm run lint
 npm run build
 ```
 
-## テンプレートカテゴリ
-
-- [Network & Connectivity](docs/template-categories/network-connectivity.md)
-
 ## MVP の先
 
 Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順次追加する。Cache HIT / MISS、Queue、Replication、Retry、Circuit Breaker、クラウド Provider / Theme、npm 公開、学習サイト連携は将来拡張とする。
-
-## テンプレートカテゴリ
-
-- [Compute & Scaling](docs/template-categories/compute-scaling.md)
-- [Data & Storage](docs/template-categories/data-and-storage.md) — データの保存、取得、複製と、Reliability & Recovery との分類境界
-- [Security](docs/template-categories/security.md) — 信頼境界、認証・認可、検査、許可・拒否を扱うカテゴリの掲載基準
