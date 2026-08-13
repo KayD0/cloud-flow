@@ -22,7 +22,7 @@ export type ServerlessScalingAction =
   | { type: "set-speed"; speed: PlaybackSpeed };
 
 export const initialServerlessScalingState: ServerlessScalingState = {
-  playback: "idle", phase: "ready", invocationCount: 8, concurrencyLimit: 3,
+  playback: "idle", phase: "ready", invocationCount: 6, concurrencyLimit: 6,
   speed: 1, completedCount: 0, batch: 0,
 };
 

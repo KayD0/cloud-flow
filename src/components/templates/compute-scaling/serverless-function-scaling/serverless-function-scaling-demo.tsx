@@ -1,127 +1,107 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
-import {
-  getScalingSnapshot,
-  getStateExplanation,
-  initialServerlessScalingState,
-  serverlessScalingReducer,
-  type FlowPhase,
-  type PlaybackSpeed,
-} from "@/lib/scenarios/compute-scaling/serverless-function-scaling/serverless-function-scaling-scenario";
+import { useEffect, useState, type CSSProperties } from "react";
 import styles from "./serverless-function-scaling-demo.module.css";
-import { useTemplateLoop } from "@/components/templates/use-template-loop";
-
-const phases: { key: FlowPhase; label: string; detail: string }[] = [
-  { key: "invocation", label: "Invocation", detail: "synthetic calls" },
-  { key: "function", label: "Cold / Warm", detail: "allocate runtime" },
-  { key: "processing", label: "Processing", detail: "bounded concurrency" },
-  { key: "idle", label: "Idle", detail: "ready for reuse" },
-];
-
-const playbackLabels = { idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED" } as const;
 
 export function ServerlessFunctionScalingDemo() {
-  const [state, dispatch] = useReducer(serverlessScalingReducer, initialServerlessScalingState, (initial) => serverlessScalingReducer(initial, { type: "start" }));
-  const snapshot = getScalingSnapshot(state);
+  const [stage, setStage] = useState(0);
+  const isDeploying = stage === 1 || stage === 3 || stage === 5;
+  const isFiring = stage === 2 || stage === 4 || stage === 6;
+  const isRecalling = stage === 7;
+  const deployedCount = stage === 0 ? 0 : stage <= 2 ? 2 : stage <= 4 ? 4 : 6;
+  const deployingFrom = isDeploying ? deployedCount - 2 : deployedCount;
+  const firingCount = isFiring ? deployedCount : 0;
+  const visibleEnemyLanes = isFiring ? Array.from({ length: deployedCount }, (_, index) => index) : [];
+  const displayedHostiles = visibleEnemyLanes.length;
+  const eliminatedCount = stage <= 2 ? 0 : stage <= 4 ? 2 : stage <= 6 ? 4 : 6;
 
   useEffect(() => {
-    if (state.playback !== "running") return;
-    const timer = window.setInterval(() => dispatch({ type: "tick" }), 900 / state.speed);
-    return () => window.clearInterval(timer);
-  }, [state.playback, state.speed]);
-
-  const visibleFunctions = state.phase === "idle"
-    ? Math.min(state.completedCount, state.concurrencyLimit)
-    : snapshot.activeCount;
-
-  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
+    const duration = stage === 0 ? 700 : isDeploying ? 1500 : isFiring ? 1800 : 1200;
+    const timer = window.setTimeout(() => setStage((current) => (current + 1) % 8), duration);
+    return () => window.clearTimeout(timer);
+  }, [isDeploying, isFiring, stage]);
 
   return (
     <section className={styles.demo} aria-labelledby="serverless-scaling-title">
-      <div className={styles.header}>
+      <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>INTERACTIVE SCENARIO 25</p>
-          <h2 id="serverless-scaling-title">Invocation wave simulator</h2>
-          <p className={styles.description}>呼び出し量と同時実行上限から、Cold Start、Warm 再利用、待機、Idle への遷移を比較します。</p>
+          <p className={styles.eyebrow}>TEMPLATE PREVIEW</p>
+          <h2 id="serverless-scaling-title">Serverless Defense Grid</h2>
         </div>
-        <div className={`${styles.status} ${styles[state.playback]}`} aria-live="polite">
-          <span>現在状態</span><strong>{playbackLabels[state.playback]}</strong>
+        <div className={styles.hud} aria-label={`${displayedHostiles} events incoming, ${deployedCount} functions deployed`}>
+          <span>HOSTILES <strong>{displayedHostiles}</strong></span>
+          <span>TOWERS <strong>{deployedCount}/6</strong></span>
         </div>
-      </div>
+      </header>
 
-      <ol className={styles.flow} aria-label="Invocation から Idle までの処理フロー">
-        {phases.map((phase, index) => {
-          const active = state.phase === phase.key;
-          const passed = state.completedCount > 0 && (phase.key === "invocation" || phase.key === "function" || phase.key === "processing");
-          return (
-            <li key={phase.key} className={`${active ? styles.activeStep : ""} ${passed ? styles.passedStep : ""}`} aria-current={active ? "step" : undefined}>
-              <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{phase.label}</strong><small>{phase.detail}</small>
-            </li>
-          );
-        })}
-      </ol>
+      <div className={styles.game} data-stage={stage}>
+        <div className={styles.terrain} aria-hidden="true" />
+        <div className={styles.core} aria-label="Protected service endpoint">
+          <i aria-hidden="true" />
+          <span>API CORE</span>
+        </div>
 
-      <div className={styles.workspace}>
-        <div className={styles.visual}>
-          <div className={styles.metrics}>
-            <div><span>COMPLETED</span><strong>{state.completedCount} / {state.invocationCount}</strong></div>
-            <div><span>ACTIVE</span><strong>{snapshot.activeCount}</strong></div>
-            <div className={snapshot.queuedCount > 0 ? styles.warningMetric : ""}><span>QUEUED</span><strong>{snapshot.queuedCount}</strong></div>
-            <div><span>LIMIT</span><strong>{state.concurrencyLimit}</strong></div>
+        {isDeploying && (
+          <div className={styles.deployStream} aria-hidden="true">
+            {Array.from({ length: 2 }, (_, index) => <i key={index} />)}
           </div>
+        )}
 
-          <div className={styles.functionPool} aria-label={`${visibleFunctions} 個の Function インスタンス`}>
-            {Array.from({ length: state.concurrencyLimit }, (_, index) => {
-              const occupied = index < visibleFunctions;
-              const cold = occupied && index >= snapshot.warmCount && state.phase === "function" && state.batch === 0;
-              const warm = occupied && !cold && (state.phase === "function" || state.phase === "processing");
-              const processing = occupied && state.phase === "processing";
-              const idle = occupied && state.phase === "idle";
-              const label = processing ? "PROCESSING" : cold ? "COLD START" : warm ? "WARM" : idle ? "IDLE" : "AVAILABLE";
-              return (
-                <div key={index} className={`${styles.functionCard} ${cold ? styles.cold : ""} ${warm ? styles.warm : ""} ${processing ? styles.processing : ""} ${idle ? styles.idleFunction : ""}`}>
-                  <span>ƒ</span><strong>Function {index + 1}</strong><small>{label}</small>
-                </div>
-              );
-            })}
-          </div>
-
-          {snapshot.isConstrained && state.phase !== "ready" && state.phase !== "idle" && (
-            <div className={styles.boundary} role="status"><strong>CONCURRENCY BOUNDARY</strong><span>{snapshot.queuedCount} invocation(s) waiting — no calls are lost</span></div>
-          )}
+        <div className={styles.enemyLanes} aria-label={`${displayedHostiles} incoming events`}>
+          {visibleEnemyLanes.map((lane) => (
+            <span
+              key={`${stage}-${lane}`}
+              className={styles.enemy}
+              data-lane={lane}
+              data-targeted="true"
+              aria-hidden="true"
+            >
+              <i />
+            </span>
+          ))}
         </div>
 
-        <aside className={styles.explanation} aria-labelledby="scaling-reason-title">
-          <p className={styles.panelLabel}>WHY THIS STATE?</p>
-          <h3 id="scaling-reason-title">現在の判断</h3>
-          <p aria-live="polite">{getStateExplanation(state)}</p>
-          <dl>
-            <div><dt>データ</dt><dd>合成のみ</dd></div>
-            <div><dt>Cold / Warm</dt><dd>{snapshot.coldCount} / {snapshot.warmCount}</dd></div>
-            <div><dt>実環境への作用</dt><dd>なし</dd></div>
-          </dl>
-        </aside>
+        <div className={styles.projectiles} aria-hidden="true">
+          {Array.from({ length: deployedCount }, (_, index) => (
+            <i key={index} style={{ "--tower": index } as CSSProperties} data-active={index < firingCount} />
+          ))}
+        </div>
+
+        <div className={styles.towers} aria-label={`${deployedCount} function defense towers`}>
+          {Array.from({ length: 6 }, (_, index) => {
+            const deployed = index < deployedCount;
+            const cold = deployed && isDeploying && index >= deployingFrom;
+            return (
+              <article
+                key={index}
+                className={styles.tower}
+                data-state={!deployed ? "standby" : isRecalling ? "recalling" : cold ? "booting" : index < firingCount ? "firing" : "warm"}
+                style={{ "--tower": index } as CSSProperties}
+              >
+                <span className={styles.turret} aria-hidden="true"><i /><b /></span>
+                <small>FN-{String(index + 1).padStart(2, "0")}</small>
+              </article>
+            );
+          })}
+        </div>
+
+        <div className={styles.command} role="status">
+          <span>API CORE / AUTO DEPLOY</span>
+          <strong>
+            {isRecalling ? "RECALLING ALL 6 TOWERS"
+              : isDeploying ? `DEPLOYING 2 TOWERS · ${deployedCount}/6`
+              : isFiring ? `FIRING SEQUENCE · ${firingCount}/6`
+                : "SCANNING PERIMETER"}
+          </strong>
+        </div>
       </div>
 
-      <div className={styles.controls} aria-label="シナリオ操作">
-        <div className={styles.transport}>
-          <button type="button" onClick={() => dispatch({ type: "start" })} disabled={state.playback === "running"}>▶ Start</button>
-          <button type="button" onClick={() => dispatch({ type: "pause" })} disabled={state.playback !== "running"}>Ⅱ Pause</button>
-          <button type="button" onClick={() => dispatch({ type: "reset" })}>↺ Reset</button>
-        </div>
-        <div className={styles.settings}>
-          <label>呼び出し量 <strong>{state.invocationCount}</strong><input type="range" min="1" max="18" value={state.invocationCount} onChange={(event) => dispatch({ type: "set-invocations", count: Number(event.target.value) })} /></label>
-          <label>同時実行上限 <strong>{state.concurrencyLimit}</strong><input type="range" min="1" max="6" value={state.concurrencyLimit} onChange={(event) => dispatch({ type: "set-concurrency", count: Number(event.target.value) })} /></label>
-          <label>速度<select value={state.speed} onChange={(event) => dispatch({ type: "set-speed", speed: Number(event.target.value) as PlaybackSpeed })}><option value="0.5">0.5×</option><option value="1">1×</option><option value="2">2×</option></select></label>
-        </div>
+      <div className={styles.readout}>
+        <div><span>EVENT WAVE</span><strong>{isFiring ? 2 : 0}</strong></div>
+        <div><span>ELIMINATED</span><strong>{eliminatedCount}</strong></div>
+        <div><span>DEPLOYMENT STAGE</span><strong>{deployedCount === 0 ? "0" : deployedCount === 2 ? "0 → 2" : deployedCount === 4 ? "0 → 2 → 4" : "0 → 2 → 4 → 6"}</strong></div>
+        <div><span>CONCURRENCY CAP</span><strong>6</strong></div>
       </div>
-
-      <footer className={styles.note}>
-        <strong>なぜ Compute &amp; Scaling?</strong>
-        <span>中心となる判断が、呼び出し量に応じて計算リソースの同時実行数を増減し、上限内で再利用することだからです。表示値と所要時間は説明用で、性能・可用性・安全性を保証しません。</span>
-      </footer>
     </section>
   );
 }

@@ -12,9 +12,9 @@ describe("serverlessScalingReducer", () => {
     let state = serverlessScalingReducer(initialServerlessScalingState, { type: "start" });
     state = tick(state, 1); expect(state.phase).toBe("invocation");
     state = tick(state, 1); expect(state.phase).toBe("function");
-    expect(getScalingSnapshot(state)).toMatchObject({ warmCount: 1, coldCount: 2 });
+    expect(getScalingSnapshot(state)).toMatchObject({ warmCount: 1, coldCount: 5 });
     state = tick(state, 1); expect(state.phase).toBe("processing");
-    state = tick(state, 1); expect(state).toMatchObject({ phase: "idle", completedCount: 3 });
+    state = tick(state, 1); expect(state).toMatchObject({ phase: "idle", completedCount: 6 });
   });
 
   it("同時実行上限を超えた Invocation を待機させ、複数の波で完了する", () => {
@@ -28,10 +28,11 @@ describe("serverlessScalingReducer", () => {
   });
 
   it("2回目以降は Idle の Function を Warm として再利用する", () => {
-    let state = serverlessScalingReducer(initialServerlessScalingState, { type: "start" });
+    let state = serverlessScalingReducer(initialServerlessScalingState, { type: "set-invocations", count: 8 });
+    state = serverlessScalingReducer(state, { type: "start" });
     state = tick(state, 6);
     expect(state).toMatchObject({ phase: "function", batch: 1 });
-    expect(getScalingSnapshot(state)).toMatchObject({ coldCount: 0, warmCount: 3 });
+    expect(getScalingSnapshot(state)).toMatchObject({ coldCount: 0, warmCount: 2 });
   });
 
   it("Pause 中の tick は状態を変更しない", () => {
