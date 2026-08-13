@@ -39,3 +39,7 @@ npm run build
 ## MVP の先
 
 Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順次追加する。Cache HIT / MISS、Queue、Replication、Retry、Circuit Breaker、クラウド Provider / Theme、npm 公開、学習サイト連携は将来拡張とする。
+
+## テンプレートカテゴリ
+
+- [Security](docs/template-categories/security.md) — 信頼境界、認証・認可、検査、許可・拒否を扱うカテゴリの掲載基準
