@@ -13,6 +13,8 @@ export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 
 export type TemplateDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
+export type TemplateStatus = "available" | "planned";
+
 export type TemplateAction = "Play" | "Pause" | "Reset" | "Adjust traffic" | "Inject failure";
 
 export interface TemplateCategory {
@@ -33,6 +35,7 @@ export interface DesignTemplate {
   tags: readonly string[];
   concepts: readonly string[];
   difficulty: TemplateDifficulty;
+  status: TemplateStatus;
   motions: readonly string[];
   actions: readonly TemplateAction[];
   href: string;

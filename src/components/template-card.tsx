@@ -9,7 +9,10 @@ export function TemplateCard({ template }: { template: DesignTemplate }) {
           <p className="template-kicker">INTERACTIVE TEMPLATE</p>
           <h2>{template.name}</h2>
         </div>
-        <span className="difficulty">{template.difficulty}</span>
+        <div className="template-badges">
+          <span className={`template-status ${template.status}`}>{template.status === "available" ? "Available" : "Planned"}</span>
+          <span className="difficulty">{template.difficulty}</span>
+        </div>
       </div>
       <p className="template-summary">{template.summary}</p>
       <dl className="template-metadata">
@@ -30,7 +33,7 @@ export function TemplateCard({ template }: { template: DesignTemplate }) {
         {template.tags.map((tag) => <li key={tag}>{tag}</li>)}
       </ul>
       <Link className="template-link" href={template.href} aria-label={`${template.name} の詳細を開く`}>
-        Explore template <span aria-hidden="true">→</span>
+        {template.status === "available" ? "Explore template" : "View planned template"} <span aria-hidden="true">→</span>
       </Link>
     </article>
   );

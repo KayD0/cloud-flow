@@ -1,4 +1,4 @@
-import type { InfrastructureNode, ScenarioControls } from "./model";
+import type { InfrastructureNode, ScenarioControls } from "@/lib/infrastructure/model";
 
 export const SERVER_IDS = ["server-a", "server-b", "server-c"] as const;
 export type ServerId = (typeof SERVER_IDS)[number];

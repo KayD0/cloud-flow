@@ -7,7 +7,7 @@ import {
   SERVER_IDS,
   type RequestToken,
   type ServerId,
-} from "@/lib/infrastructure/load-balancer-scenario";
+} from "@/lib/scenarios/traffic-routing/round-robin-load-balancing/load-balancer-scenario";
 import styles from "./load-balancer-demo.module.css";
 
 const SERVER_COORDINATES: Record<ServerId, { x: number; y: number }> = {

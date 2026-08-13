@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LoadBalancerDemo } from "@/components/load-balancer-demo";
+import { LoadBalancerDemo } from "@/components/templates/traffic-routing/round-robin-load-balancing/load-balancer-demo";
 import { SiteHeader } from "@/components/site-header";
 import { getCategory, getTemplate } from "@/lib/catalog/catalog";
 

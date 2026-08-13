@@ -19,6 +19,7 @@ export default async function CategoryPage({ params }: PageProps<"/templates/cat
   const { slug } = await params;
   const category = getCategory(slug);
   if (!category) notFound();
+  const plannedCount = category.templates.filter((template) => template.status === "planned").length;
 
   return (
     <main>
@@ -35,8 +36,8 @@ export default async function CategoryPage({ params }: PageProps<"/templates/cat
         {category.templates.length > 0 ? (
           <section aria-labelledby="templates-heading">
             <div className="section-heading compact">
-              <div><p>AVAILABLE NOW</p><h2 id="templates-heading">Templates</h2></div>
-              <p>{category.templates.length}件</p>
+              <div><p>TEMPLATE ROADMAP</p><h2 id="templates-heading">Templates</h2></div>
+              <p>{category.templates.length}件{plannedCount > 0 ? `（${plannedCount}件準備中）` : ""}</p>
             </div>
             <div className="template-grid">
               {category.templates.map((template) => <TemplateCard key={template.slug} template={template} />)}

@@ -1,4 +1,5 @@
 import type { CatalogCategory, CategorySlug, DesignTemplate, TemplateCategory } from "./model";
+import { catalogTemplates } from "./templates";
 
 export const templateCategories: readonly TemplateCategory[] = [
   { slug: "traffic-routing", name: "Traffic & Routing", description: "リクエストの入口、分散、ルーティングの流れを理解する。" },
@@ -11,26 +12,13 @@ export const templateCategories: readonly TemplateCategory[] = [
   { slug: "observability-operations", name: "Observability & Operations", description: "メトリクス、ログ、運用アクションを関連付ける。" },
 ] as const;
 
-export const designTemplates: readonly DesignTemplate[] = [
-  {
-    slug: "round-robin-load-balancing",
-    name: "Round Robin Load Balancing",
-    summary: "正常なサーバーへリクエストを順番に振り分け、障害時の経路変化を観察します。",
-    primaryCategory: "traffic-routing",
-    tags: ["Load balancing", "Health check", "Failure handling"],
-    concepts: ["Client", "Load Balancer", "Server pool"],
-    difficulty: "Beginner",
-    motions: ["Request distribution", "Failure exclusion", "Recovery"],
-    actions: ["Play", "Pause", "Reset", "Adjust traffic", "Inject failure"],
-    href: "/templates/round-robin-load-balancing",
-  },
-] as const;
+export const designTemplates: readonly DesignTemplate[] = catalogTemplates;
 
 export function getCatalogCategories(): CatalogCategory[] {
   return templateCategories
     .map((category) => {
       const templates = designTemplates.filter((template) => template.primaryCategory === category.slug);
-      return { ...category, templates, isAvailable: templates.length > 0 };
+      return { ...category, templates, isAvailable: templates.some((template) => template.status === "available") };
     })
     .sort((left, right) => Number(right.isAvailable) - Number(left.isAvailable));
 }

@@ -18,4 +18,10 @@ describe("template catalog", () => {
       expect(Array.isArray(template.tags)).toBe(true);
     }
   });
+
+  it("pre-registers one isolated catalog entry for every template issue", () => {
+    expect(designTemplates).toHaveLength(40);
+    expect(new Set(designTemplates.map((template) => template.slug)).size).toBe(40);
+    expect(designTemplates.filter((template) => template.status === "available")).toHaveLength(1);
+  });
 });
