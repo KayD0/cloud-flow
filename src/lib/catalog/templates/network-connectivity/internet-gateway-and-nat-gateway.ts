@@ -3,14 +3,14 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "internet-gateway-and-nat-gateway",
   name: "Internet Gateway and NAT Gateway",
-  summary: "IngressとEgress、PublicとPrivate Resourceの外部接続経路を比較します。",
+  summary: "Ingress と Egress を切り替え、Public / Private Resource の外部接続経路の違いを確認します。",
   primaryCategory: "network-connectivity",
-  tags: ["Internet Gateway and NAT Gateway", "network-connectivity"],
-  concepts: ["Internet Gateway and NAT Gateway"],
+  tags: ["Gateway", "Ingress / Egress", "Public / Private"],
+  concepts: ["Internet Gateway", "NAT Gateway", "Public / Private Resource"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
-  actions: ["Play", "Pause", "Reset"],
+  status: "available",
+  motions: ["Directional packet flow", "Gateway state transition"],
+  actions: ["Play", "Pause", "Reset", "Inject failure"],
   href: "/templates/network-connectivity/internet-gateway-and-nat-gateway",
 } as const satisfies DesignTemplate;
 
