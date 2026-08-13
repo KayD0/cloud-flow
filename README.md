@@ -39,3 +39,7 @@ npm run build
 ## MVP の先
 
 Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順次追加する。Cache HIT / MISS、Queue、Replication、Retry、Circuit Breaker、クラウド Provider / Theme、npm 公開、学習サイト連携は将来拡張とする。
+
+## テンプレートカテゴリ
+
+- [Data & Storage](docs/template-categories/data-and-storage.md) — データの保存、取得、複製と、Reliability & Recovery との分類境界
