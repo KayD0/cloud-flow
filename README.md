@@ -36,6 +36,10 @@ npm run lint
 npm run build
 ```
 
+## テンプレートカテゴリ
+
+- [Network & Connectivity](docs/template-categories/network-connectivity.md)
+
 ## MVP の先
 
 Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順次追加する。Cache HIT / MISS、Queue、Replication、Retry、Circuit Breaker、クラウド Provider / Theme、npm 公開、学習サイト連携は将来拡張とする。
