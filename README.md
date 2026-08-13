@@ -36,6 +36,10 @@ npm run lint
 npm run build
 ```
 
+## テンプレートカテゴリ
+
+- [Messaging & Integration](docs/template-categories/messaging-integration.md) — 非同期通信における蓄積、配送、再試行の掲載基準と視覚表現
+
 ## MVP の先
 
 Request Flow、Auto Scaling、Public / Private Subnet、Multi-AZ Failover を順次追加する。Cache HIT / MISS、Queue、Replication、Retry、Circuit Breaker、クラウド Provider / Theme、npm 公開、学習サイト連携は将来拡張とする。
