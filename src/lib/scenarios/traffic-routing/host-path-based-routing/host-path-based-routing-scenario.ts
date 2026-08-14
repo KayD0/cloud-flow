@@ -1,6 +1,7 @@
 export type BackendId = "web" | "api" | "admin";
-export type RuleId = "api-rule" | "web-rule" | "admin-rule";
-export type RoutingPhase = "initial" | "inspect-request" | "evaluating" | "matched" | "delivered" | "no-match";
+export type RuleId = "api-rule" | "admin-rule" | "default-rule";
+export type GameMode = "guided" | "challenge";
+export type GameStatus = "ready" | "playing" | "paused" | "won" | "lost";
 
 export interface RoutingRule {
   id: RuleId;
@@ -8,128 +9,148 @@ export interface RoutingRule {
   host: string;
   pathPrefix: string;
   backend: BackendId;
-  priority: number;
+  isDefault: boolean;
 }
 
-export interface RoutingState {
-  playback: "idle" | "running" | "paused";
-  phase: RoutingPhase;
+export interface RoutingRequest {
+  id: string;
   host: string;
   path: string;
-  rules: readonly RoutingRule[];
-  evaluationIndex: number | null;
-  matchedRuleId: RuleId | null;
-  destination: BackendId | null;
-  explanation: string;
+  expectedRuleId: RuleId;
+  reason: string;
+  hint: string;
 }
 
-export type RoutingAction =
+export interface RoutingGameState {
+  mode: GameMode;
+  status: GameStatus;
+  roundIndex: number;
+  selectedRuleId: RuleId | null;
+  correctCount: number;
+  mistakes: number;
+  safetyBonus: number;
+  feedback: string;
+}
+
+export type RoutingGameAction =
+  | { type: "set-mode"; mode: GameMode }
   | { type: "start" }
   | { type: "pause" }
-  | { type: "reset" }
-  | { type: "set-host"; host: string }
-  | { type: "set-path"; path: string }
-  | { type: "move-rule"; ruleId: RuleId; direction: "up" | "down" }
-  | { type: "tick" };
+  | { type: "select-rule"; ruleId: RuleId }
+  | { type: "route-request" }
+  | { type: "next-request" }
+  | { type: "reset" };
 
-export const initialRoutingRules: readonly RoutingRule[] = [
-  { id: "api-rule", label: "API path", host: "app.learn.local", pathPrefix: "/api", backend: "api", priority: 1 },
-  { id: "web-rule", label: "Web fallback", host: "app.learn.local", pathPrefix: "/", backend: "web", priority: 2 },
-  { id: "admin-rule", label: "Admin host", host: "admin.learn.local", pathPrefix: "/", backend: "admin", priority: 3 },
+export const routingRules: readonly RoutingRule[] = [
+  { id: "api-rule", label: "API専用ルール", host: "app.learn.local", pathPrefix: "/api", backend: "api", isDefault: false },
+  { id: "admin-rule", label: "管理画面ルール", host: "admin.learn.local", pathPrefix: "/", backend: "admin", isDefault: false },
+  { id: "default-rule", label: "Default Route", host: "*", pathPrefix: "/", backend: "web", isDefault: true },
 ];
 
-export const initialRoutingState: RoutingState = {
-  playback: "idle",
-  phase: "initial",
-  host: "app.learn.local",
-  path: "/api/orders",
-  rules: initialRoutingRules,
-  evaluationIndex: null,
-  matchedRuleId: null,
-  destination: null,
-  explanation: "HostとPathを設定し、Startで合成リクエストを送信します。",
-};
+export const routingRequests: readonly RoutingRequest[] = [
+  {
+    id: "api-orders",
+    host: "app.learn.local",
+    path: "/api/orders",
+    expectedRuleId: "api-rule",
+    reason: "Host が一致し、Path が /api で始まるため、API専用ルールが最も具体的です。",
+    hint: "まずHostを照合し、次にPath prefixを確認します。",
+  },
+  {
+    id: "web-guide",
+    host: "app.learn.local",
+    path: "/guide",
+    expectedRuleId: "default-rule",
+    reason: "専用ルールに一致しない通常ページなので、Default RouteでWeb Serviceへ配送します。",
+    hint: "専用Hostにも /api にも一致しない場合だけDefault Routeを使います。",
+  },
+  {
+    id: "admin-settings",
+    host: "admin.learn.local",
+    path: "/settings",
+    expectedRuleId: "admin-rule",
+    reason: "Pathより先にHost条件が管理画面ルールへ一致し、Admin Serviceが選ばれます。",
+    hint: "Pathが / で始まるルールが複数あっても、Hostが具体的なルールを優先します。",
+  },
+  {
+    id: "api-boundary",
+    host: "app.learn.local",
+    path: "/api",
+    expectedRuleId: "api-rule",
+    reason: "/api 自体も prefix 条件に一致します。Default Routeへ逃がさずAPI Serviceへ配送します。",
+    hint: "prefix一致には、prefixと完全に同じPathも含まれます。",
+  },
+];
 
-export function orderedRules(rules: readonly RoutingRule[]) {
-  return [...rules].sort((left, right) => left.priority - right.priority);
-}
-
-export function ruleMatches(rule: RoutingRule, host: string, path: string) {
-  return rule.host === host && path.startsWith(rule.pathPrefix);
-}
-
-function returnToInitial(state: RoutingState, changes: Partial<RoutingState>): RoutingState {
+export function createInitialRoutingGameState(mode: GameMode = "guided"): RoutingGameState {
   return {
-    ...state,
-    ...changes,
-    playback: "idle",
-    phase: "initial",
-    evaluationIndex: null,
-    matchedRuleId: null,
-    destination: null,
-    explanation: "条件が変わりました。Startで新しい合成リクエストを評価します。",
+    mode,
+    status: "ready",
+    roundIndex: 0,
+    selectedRuleId: null,
+    correctCount: 0,
+    mistakes: 0,
+    safetyBonus: 0,
+    feedback: "モードを選び、Startで最初のRequestを受け取ってください。",
   };
 }
 
-function moveRule(state: RoutingState, ruleId: RuleId, direction: "up" | "down") {
-  const rules = orderedRules(state.rules);
-  const index = rules.findIndex((rule) => rule.id === ruleId);
-  const swapIndex = direction === "up" ? index - 1 : index + 1;
-  if (index < 0 || swapIndex < 0 || swapIndex >= rules.length) return state;
-  const current = rules[index];
-  const other = rules[swapIndex];
-  const reordered = rules.map((rule) => {
-    if (rule.id === current.id) return { ...rule, priority: other.priority };
-    if (rule.id === other.id) return { ...rule, priority: current.priority };
-    return rule;
-  });
-  return returnToInitial(state, { rules: orderedRules(reordered) });
+export const initialRoutingGameState = createInitialRoutingGameState();
+
+export function scoreRoutingGame(state: RoutingGameState) {
+  const accuracy = Math.round((state.correctCount / routingRequests.length) * 100);
+  return { accuracy, safety: state.safetyBonus, total: accuracy + state.safetyBonus };
 }
 
-function tick(state: RoutingState): RoutingState {
-  if (state.playback !== "running") return state;
-  const rules = orderedRules(state.rules);
-  if (state.phase === "inspect-request") {
-    return { ...state, phase: "evaluating", evaluationIndex: 0, explanation: `優先順位1: ${rules[0].label} を評価しています。` };
-  }
-  if (state.phase === "evaluating" && state.evaluationIndex !== null) {
-    const rule = rules[state.evaluationIndex];
-    if (ruleMatches(rule, state.host, state.path)) {
-      return { ...state, phase: "matched", matchedRuleId: rule.id, destination: rule.backend, explanation: `${rule.label} に一致しました。配送先は ${rule.backend.toUpperCase()} Backend です。` };
-    }
-    const nextIndex = state.evaluationIndex + 1;
-    if (nextIndex < rules.length) {
-      return { ...state, evaluationIndex: nextIndex, explanation: `${rule.label} は不一致です。次の ${rules[nextIndex].label} を評価します。` };
-    }
-    return { ...state, playback: "idle", phase: "no-match", explanation: "すべてのルールが不一致です。配送せず No match で完了しました。" };
-  }
-  if (state.phase === "matched") {
-    return { ...state, playback: "idle", phase: "delivered", explanation: `${state.destination?.toUpperCase()} Backend への配送が完了しました（学習用の合成結果）。` };
-  }
-  return state;
-}
-
-export function routingReducer(state: RoutingState, action: RoutingAction): RoutingState {
+export function routingGameReducer(state: RoutingGameState, action: RoutingGameAction): RoutingGameState {
   switch (action.type) {
+    case "set-mode":
+      return createInitialRoutingGameState(action.mode);
     case "start":
-      if (state.phase === "delivered" || state.phase === "no-match") {
-        return { ...returnToInitial(state, {}), playback: "running", phase: "inspect-request", explanation: `Request属性 Host=${state.host}, Path=${state.path} を確認しています。` };
+      if (state.status === "ready" || state.status === "paused") {
+        return { ...state, status: "playing", feedback: "RequestのHostとPathを読み、配送ルールを選んでください。" };
       }
-      if (state.phase === "initial") {
-        return { ...state, playback: "running", phase: "inspect-request", explanation: `Request属性 Host=${state.host}, Path=${state.path} を確認しています。` };
-      }
-      return { ...state, playback: "running" };
+      return state;
     case "pause":
-      return state.playback === "running" ? { ...state, playback: "paused", explanation: `一時停止中: ${state.explanation}` } : state;
+      return state.status === "playing"
+        ? { ...state, status: "paused", feedback: "一時停止中です。Startで同じRequestから再開できます。" }
+        : state;
+    case "select-rule":
+      return state.status === "playing" ? { ...state, selectedRuleId: action.ruleId } : state;
+    case "route-request": {
+      if (state.status !== "playing" || state.selectedRuleId === null) return state;
+      const request = routingRequests[state.roundIndex];
+      const selected = routingRules.find((rule) => rule.id === state.selectedRuleId)!;
+      if (state.selectedRuleId !== request.expectedRuleId) {
+        const defaultMisuse = selected.isDefault && request.expectedRuleId !== "default-rule";
+        return {
+          ...state,
+          status: "lost",
+          mistakes: state.mistakes + 1,
+          feedback: defaultMisuse
+            ? `配送失敗: ${request.reason} Default Routeは専用条件に一致しないRequestだけに使います。`
+            : `誤ルート: ${request.reason}`,
+        };
+      }
+      const isLast = state.roundIndex === routingRequests.length - 1;
+      return {
+        ...state,
+        status: isLast ? "won" : "paused",
+        correctCount: state.correctCount + 1,
+        safetyBonus: state.safetyBonus + (request.expectedRuleId !== "default-rule" ? 5 : 10),
+        feedback: `配送成功: ${request.reason}`,
+      };
+    }
+    case "next-request":
+      if (state.status !== "paused" || state.correctCount !== state.roundIndex + 1) return state;
+      return {
+        ...state,
+        status: "playing",
+        roundIndex: state.roundIndex + 1,
+        selectedRuleId: null,
+        feedback: "次のRequestです。HostとPathの両方を確認してください。",
+      };
     case "reset":
-      return initialRoutingState;
-    case "set-host":
-      return returnToInitial(state, { host: action.host });
-    case "set-path":
-      return returnToInitial(state, { path: action.path });
-    case "move-rule":
-      return moveRule(state, action.ruleId, action.direction);
-    case "tick":
-      return tick(state);
+      return createInitialRoutingGameState(state.mode);
   }
 }

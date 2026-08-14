@@ -1,46 +1,62 @@
 import { describe, expect, it } from "vitest";
-import { initialRoutingState, orderedRules, routingReducer, type RoutingState } from "./host-path-based-routing-scenario";
+import {
+  createInitialRoutingGameState,
+  routingGameReducer,
+  routingRequests,
+  scoreRoutingGame,
+  type RoutingGameState,
+} from "./host-path-based-routing-scenario";
 
-function runToCompletion(state: RoutingState) {
-  let current = routingReducer(state, { type: "start" });
-  for (let count = 0; count < 8 && current.playback === "running"; count += 1) current = routingReducer(current, { type: "tick" });
-  return current;
+function start(state = createInitialRoutingGameState()) {
+  return routingGameReducer(state, { type: "start" });
 }
 
-describe("routingReducer", () => {
-  it("HostとPathに一致するAPI Backendへ優先ルールで配送する", () => {
-    const state = runToCompletion(initialRoutingState);
-    expect(state.phase).toBe("delivered");
-    expect(state.destination).toBe("api");
-    expect(state.matchedRuleId).toBe("api-rule");
+function answer(state: RoutingGameState, ruleId: "api-rule" | "admin-rule" | "default-rule") {
+  return routingGameReducer(
+    routingGameReducer(state, { type: "select-rule", ruleId }),
+    { type: "route-request" },
+  );
+}
+
+describe("routingGameReducer", () => {
+  it("全Requestを正しいルールへ連続配送すると勝利する", () => {
+    let state = start(createInitialRoutingGameState("challenge"));
+    for (const [index, request] of routingRequests.entries()) {
+      state = answer(state, request.expectedRuleId);
+      if (index < routingRequests.length - 1) state = routingGameReducer(state, { type: "next-request" });
+    }
+    expect(state.status).toBe("won");
+    expect(state.correctCount).toBe(routingRequests.length);
+    expect(scoreRoutingGame(state)).toEqual({ accuracy: 100, safety: 25, total: 125 });
   });
 
-  it("catch-allルールを上位にすると同じRequestがWeb Backendへ配送される", () => {
-    const reordered = routingReducer(initialRoutingState, { type: "move-rule", ruleId: "web-rule", direction: "up" });
-    expect(orderedRules(reordered.rules).map((rule) => rule.id)).toEqual(["web-rule", "api-rule", "admin-rule"]);
-    expect(runToCompletion(reordered).destination).toBe("web");
+  it("API RequestでDefault Routeを誤用すると理由付きで失敗する", () => {
+    const state = answer(start(), "default-rule");
+    expect(state.status).toBe("lost");
+    expect(state.mistakes).toBe(1);
+    expect(state.feedback).toContain("Default Route");
   });
 
-  it("Admin HostをAdmin Backendへ配送する", () => {
-    const state = routingReducer(initialRoutingState, { type: "set-host", host: "admin.learn.local" });
-    expect(runToCompletion(state).destination).toBe("admin");
+  it("専用ルールに一致しない通常PathではDefault Routeが正解になる", () => {
+    const first = answer(start(), "api-rule");
+    const second = routingGameReducer(first, { type: "next-request" });
+    expect(answer(second, "default-rule").status).toBe("paused");
   });
 
-  it("全ルール不一致をNo matchとして完了する", () => {
-    const state = routingReducer(initialRoutingState, { type: "set-host", host: "unknown.learn.local" });
-    const completed = runToCompletion(state);
-    expect(completed.phase).toBe("no-match");
-    expect(completed.destination).toBeNull();
+  it("/api と完全一致する境界値もAPI prefixに一致する", () => {
+    let state = start();
+    for (let index = 0; index < routingRequests.length - 1; index += 1) {
+      state = answer(state, routingRequests[index].expectedRuleId);
+      state = routingGameReducer(state, { type: "next-request" });
+    }
+    expect(routingRequests[state.roundIndex].path).toBe("/api");
+    expect(answer(state, "api-rule").status).toBe("won");
   });
 
-  it("Pause中のtickでは状態を進めない", () => {
-    const running = routingReducer(initialRoutingState, { type: "start" });
-    const paused = routingReducer(running, { type: "pause" });
-    expect(routingReducer(paused, { type: "tick" })).toBe(paused);
-  });
-
-  it("Resetで合成した初期状態へ戻る", () => {
-    const changed = runToCompletion(routingReducer(initialRoutingState, { type: "set-path", path: "/docs" }));
-    expect(routingReducer(changed, { type: "reset" })).toEqual(initialRoutingState);
+  it("Pause中は選択できず、Resetで同じモードの固定初期状態へ戻る", () => {
+    const running = start(createInitialRoutingGameState("challenge"));
+    const paused = routingGameReducer(running, { type: "pause" });
+    expect(routingGameReducer(paused, { type: "select-rule", ruleId: "api-rule" })).toBe(paused);
+    expect(routingGameReducer(paused, { type: "reset" })).toEqual(createInitialRoutingGameState("challenge"));
   });
 });
