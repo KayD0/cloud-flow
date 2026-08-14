@@ -3,14 +3,14 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "internet-gateway-and-nat-gateway",
   name: "Internet Gateway and NAT Gateway",
-  summary: "Gateway 管制官として Ingress と Egress を見分け、Public ingress と Private egress を安全に成立させるミニゲームです。",
+  summary: "Public ingress と Private egress の方向差を、二つの Gateway と自動通信フローで可視化します。",
   primaryCategory: "network-connectivity",
   tags: ["Gateway", "Ingress / Egress", "Public / Private"],
   concepts: ["Internet Gateway", "NAT Gateway", "Public / Private Resource"],
   difficulty: "Beginner",
   status: "available",
-  motions: ["Round feedback", "Gateway state transition"],
-  actions: ["Play", "Pause", "Reset", "Inject failure"],
+  motions: ["Automatic ingress flow", "Automatic egress flow", "Loop reset"],
+  actions: [],
   href: "/templates/network-connectivity/internet-gateway-and-nat-gateway",
 } as const satisfies DesignTemplate;
 
