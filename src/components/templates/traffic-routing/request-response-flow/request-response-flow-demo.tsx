@@ -9,6 +9,7 @@ import {
   requestResponseFlowReducer,
 } from "@/lib/scenarios/traffic-routing/request-response-flow/request-response-flow-scenario";
 import styles from "./request-response-flow-demo.module.css";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
 const STATUS_LABEL = { briefing: "開始前", playing: "配送中", paused: "一時停止", won: "往復完了", failed: "配送失敗" } as const;
 
@@ -25,6 +26,8 @@ export function RequestResponseFlowDemo() {
   const guidedHint = state.leg === "request"
     ? "ヒント: GET /profile はデータを組み立てる動的処理です。各 Server の役割を比べましょう。"
     : "ヒント: Response は、新しい宛先ではなく要求を送った相手へ返します。";
+
+  useTemplateLoop(terminal, () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.game} aria-labelledby="relay-title">

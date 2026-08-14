@@ -6,34 +6,19 @@ export function TemplateCard({ template }: { template: DesignTemplate }) {
     <article className="template-card">
       <div className="template-card-heading">
         <div>
-          <p className="template-kicker">INTERACTIVE TEMPLATE</p>
+          <p className="template-kicker">INFRASTRUCTURE TEMPLATE</p>
           <h2>{template.name}</h2>
         </div>
-        <div className="template-badges">
-          <span className={`template-status ${template.status}`}>{template.status === "available" ? "Available" : "Planned"}</span>
-          <span className="difficulty">{template.difficulty}</span>
-        </div>
+        <span className={`template-status ${template.status}`}>
+          {template.status === "available" ? "Available" : "Planned"}
+        </span>
       </div>
       <p className="template-summary">{template.summary}</p>
-      <dl className="template-metadata">
-        <div>
-          <dt>Concepts</dt>
-          <dd>{template.concepts.join(" · ")}</dd>
-        </div>
-        <div>
-          <dt>Motion</dt>
-          <dd>{template.motions.join(" · ")}</dd>
-        </div>
-        <div>
-          <dt>Actions</dt>
-          <dd>{template.actions.join(" · ")}</dd>
-        </div>
-      </dl>
-      <ul className="tag-list" aria-label="補助タグ">
+      <ul className="tag-list" aria-label="タグ">
         {template.tags.map((tag) => <li key={tag}>{tag}</li>)}
       </ul>
-      <Link className="template-link" href={template.href} aria-label={`${template.name} の詳細を開く`}>
-        {template.status === "available" ? "Explore template" : "View planned template"} <span aria-hidden="true">→</span>
+      <Link className="template-link" href={template.href} aria-label={`${template.name} を開く`}>
+        {template.status === "available" ? "Open template" : "View planned template"} <span aria-hidden="true">→</span>
       </Link>
     </article>
   );
