@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { designTemplates, getCatalogCategories, getCategory } from "./catalog";
+import { designTemplates, getCatalogCategories, getCategory, getTemplate } from "./catalog";
 
 describe("template catalog", () => {
   it("defines all eight vendor-neutral categories", () => {
@@ -22,6 +22,10 @@ describe("template catalog", () => {
   it("pre-registers one isolated catalog entry for every template issue", () => {
     expect(designTemplates).toHaveLength(40);
     expect(new Set(designTemplates.map((template) => template.slug)).size).toBe(40);
-    expect(designTemplates.filter((template) => template.status === "available")).toHaveLength(1);
+    expect(designTemplates.filter((template) => template.status === "available")).toHaveLength(2);
+    expect(getTemplate("dns-resolution-and-failover")).toMatchObject({
+      status: "available",
+      href: "/templates/traffic-routing/dns-resolution-and-failover",
+    });
   });
 });
