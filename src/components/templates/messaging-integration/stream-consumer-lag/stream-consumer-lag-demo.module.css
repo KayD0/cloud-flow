@@ -1,0 +1,37 @@
+.demo { overflow: hidden; border: 1px solid #263348; border-radius: 24px; background: #0b111d; box-shadow: 0 28px 80px #02050b80; }
+.header { display: flex; justify-content: space-between; gap: 2rem; padding: 2rem 2.25rem 1.4rem; border-bottom: 1px solid #263348; }
+.header h2 { margin: .25rem 0 .55rem; font-size: clamp(1.45rem, 3vw, 2.1rem); letter-spacing: -.03em; }
+.eyebrow { color: #69e7b3; font: 700 .7rem/1.2 var(--font-mono); letter-spacing: .16em; }
+.description { max-width: 680px; color: #98a8be; line-height: 1.75; }
+.stateBadge { min-width: 145px; align-self: center; padding: .8rem 1rem; border: 1px solid #3b4b63; border-radius: 14px; background: #101a2b; }
+.stateBadge span, .stateBadge small { display: block; color: #718198; font: 600 .62rem var(--font-mono); letter-spacing: .1em; }
+.stateBadge strong { display: block; margin: .2rem 0; color: #69e7b3; font: 700 .92rem var(--font-mono); }
+.stateBadge[data-state="paused"] strong { color: #ffd166; } .stateBadge[data-state="completed"] strong { color: #70b7ff; }
+.status { display: flex; gap: 1rem; padding: .8rem 2.25rem; color: #adbbce; background: #101a2b; border-bottom: 1px solid #263348; font-size: .84rem; }
+.status strong { flex: 0 0 auto; color: #dce7f5; font: 700 .68rem var(--font-mono); letter-spacing: .08em; }
+.canvas { display: grid; grid-template-columns: 150px 80px minmax(360px, 1fr) 230px; gap: 1rem; align-items: center; padding: 2.5rem 2rem; background-image: linear-gradient(#1c293b55 1px, transparent 1px), linear-gradient(90deg, #1c293b55 1px, transparent 1px); background-size: 28px 28px; }
+.producer, .consumerCard { border: 1px solid #52647d; border-radius: 14px; background: #121d2e; }
+.producer { padding: 1.1rem; } .producer span, .streamHeading span, .consumerCard span { display: block; color: #69e7b3; font: 700 .6rem var(--font-mono); letter-spacing: .1em; }
+.producer strong { display: block; margin: .35rem 0; color: #e1eaf6; font-size: .88rem; } .producer small { color: #8393aa; }
+.flowArrow { color: #69e7b3; text-align: center; } .flowArrow span { display: block; color: #8596ad; font: 700 .58rem var(--font-mono); } .flowArrow b { font-size: 2rem; }
+.streamPanel { padding: 1.2rem 1.2rem 2.1rem; border: 1px solid #3f5068; border-radius: 16px; background: #0e1827; }
+.streamHeading { display: flex; justify-content: space-between; color: #cbd7e7; font: 650 .76rem var(--font-mono); }
+.streamTrack { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); height: 54px; margin: 2.4rem .2rem 3.2rem; border: 2px solid #52647d; border-radius: 8px; }
+.segment { border-right: 1px dashed #52647d; background: linear-gradient(90deg, #17283a, #122033); } .head { position: absolute; right: -18px; top: -24px; color: #70b7ff; font: 700 .58rem var(--font-mono); }
+.cursor { position: absolute; width: 0; height: 76px; top: -11px; border-left: 3px solid #69e7b3; transition: left .35s ease; }
+.cursor b { position: absolute; top: -24px; left: -12px; display: grid; place-items: center; width: 23px; height: 20px; border-radius: 5px; color: #07120e; background: #69e7b3; font: 800 .7rem var(--font-mono); }
+.cursor small { position: absolute; top: 78px; left: -28px; width: 60px; color: #9aabc0; font: 600 .58rem var(--font-mono); text-align: center; }
+.cursorB { height: 66px; top: -6px; border-left-color: #bc9cff; border-left-style: dashed; } .cursorB b { top: 60px; color: #130b1d; background: #bc9cff; } .cursorB small { top: 84px; }
+.legend { display: flex; flex-wrap: wrap; gap: 1rem; color: #7f90a7; font: 600 .6rem var(--font-mono); } .legend i { display: inline-block; width: 18px; border-top: 2px solid #69e7b3; vertical-align: middle; } .legend .dashed { border-color: #bc9cff; border-style: dashed; }
+.consumers { display: grid; gap: .8rem; } .consumerCard { padding: .85rem; } .consumerCard[data-consumer="b"] { border-style: dashed; } .consumerCard[data-active="false"] { opacity: .72; border-color: #c08354; }
+.consumerCard > div { display: flex; justify-content: space-between; gap: .5rem; } .consumerCard[data-consumer="b"] span { color: #bc9cff; } .consumerCard > div strong { color: #73e4b7; font: 700 .65rem var(--font-mono); } .consumerCard[data-active="false"] > div strong { color: #ffae70; }
+.consumerCard dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; margin: .7rem 0; } .consumerCard dt { color: #718198; font-size: .58rem; } .consumerCard dd { color: #dce7f5; font: 650 .75rem var(--font-mono); }
+.consumerCard button, .controls button { min-height: 36px; border: 1px solid #40516a; border-radius: 8px; background: #152238; color: #cbd7e7; cursor: pointer; } .consumerCard button { width: 100%; font-size: .7rem; }
+.controls { display: grid; grid-template-columns: 1.1fr repeat(3, 1fr); gap: 1.35rem; align-items: center; padding: 1.25rem 2.25rem; border-top: 1px solid #263348; background: #0e1726; }
+.transport { display: flex; flex-wrap: wrap; gap: .45rem; } .controls button { padding: 0 .75rem; font-weight: 650; } .controls button:first-child { border-color: #3cb989; color: #74eabd; } .controls button:disabled { cursor: not-allowed; opacity: .38; }
+.rate span { display: flex; justify-content: space-between; gap: .5rem; color: #94a5bc; font: 600 .68rem var(--font-mono); } .rate output { color: #69e7b3; } .rate input { width: 100%; accent-color: #55d9a4; }
+.controls button:focus-visible, .consumerCard button:focus-visible, .rate input:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.note { display: flex; gap: 1rem; padding: 1rem 2.25rem 1.35rem; color: #8292a9; background: #0e1726; font-size: .75rem; line-height: 1.6; } .note strong { flex: 0 0 auto; color: #b9c7d9; }
+@media (max-width: 980px) { .canvas { grid-template-columns: 130px 55px 1fr; } .consumers { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; } .controls { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 650px) { .header { padding: 1.4rem; } .stateBadge { display: none; } .status { align-items: flex-start; padding: .8rem 1.4rem; } .canvas { grid-template-columns: 1fr; padding: 1.4rem; } .flowArrow b { display: inline-block; transform: rotate(90deg); } .streamPanel { min-width: 0; } .consumers { grid-column: auto; grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr; padding: 1.2rem; } .note { flex-direction: column; padding: 1rem 1.2rem 1.3rem; } }
+@media (prefers-reduced-motion: reduce) { .cursor { transition: none; } }
