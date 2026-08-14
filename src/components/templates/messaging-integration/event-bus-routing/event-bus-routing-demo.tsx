@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import {
   EVENT_TYPES, PRIORITIES, REGIONS, RULE_IDS, eventBusRoutingReducer, initialEventBusRoutingState,
   type ConsumerId, type EventAttributes, type EventPriority, type EventRegion, type EventType, type RuleId,
@@ -27,13 +28,14 @@ function explanation(state: typeof initialEventBusRoutingState) {
 }
 
 export function EventBusRoutingDemo() {
-  const [state, dispatch] = useReducer(eventBusRoutingReducer, initialEventBusRoutingState);
+  const [state, dispatch] = useReducer(eventBusRoutingReducer, initialEventBusRoutingState, (initial) => eventBusRoutingReducer(initial, { type: "start" }));
   const active = state.activeEvent;
   useEffect(() => {
     if (state.playback !== "running") return;
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 750);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   const setAttribute = (attribute: keyof EventAttributes, value: string) => dispatch({ type: "set-attribute", attribute, value });
 

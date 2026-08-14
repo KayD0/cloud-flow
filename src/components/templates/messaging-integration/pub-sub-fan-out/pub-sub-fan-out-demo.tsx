@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import {
   FAN_OUT_STAGES,
   SUBSCRIBER_IDS,
@@ -30,7 +31,9 @@ const SUBSCRIBERS: Record<SubscriberId, { label: string; y: number }> = {
 };
 
 export function PubSubFanOutDemo() {
-  const [state, dispatch] = useReducer(pubSubFanOutReducer, initialPubSubFanOutState);
+  const [state, dispatch] = useReducer(pubSubFanOutReducer, initialPubSubFanOutState, (initial) =>
+    pubSubFanOutReducer(pubSubFanOutReducer(initial, { type: "publish" }), { type: "start" }),
+  );
   const stage = FAN_OUT_STAGES[state.stageIndex];
   const settingsLocked = state.playback === "running" || state.playback === "completed";
 
@@ -39,6 +42,7 @@ export function PubSubFanOutDemo() {
     const timer = window.setTimeout(() => dispatch({ type: "tick" }), 1000);
     return () => window.clearTimeout(timer);
   }, [state.playback, state.stageIndex]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "publish" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="fan-out-demo-title">

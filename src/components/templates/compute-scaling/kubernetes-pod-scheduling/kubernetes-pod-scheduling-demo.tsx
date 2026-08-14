@@ -1,60 +1,113 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
-import { initialKubernetesPodSchedulingState, kubernetesPodSchedulingReducer, phaseLabels, type PodPhase } from "@/lib/scenarios/compute-scaling/kubernetes-pod-scheduling/kubernetes-pod-scheduling-scenario";
+import { useEffect, useReducer, useState, type CSSProperties } from "react";
+import { initialKubernetesPodSchedulingState, kubernetesPodSchedulingReducer, unitMeta, type UnitType } from "@/lib/scenarios/compute-scaling/kubernetes-pod-scheduling/kubernetes-pod-scheduling-scenario";
 import styles from "./kubernetes-pod-scheduling-demo.module.css";
-import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
-const playbackLabels = { idle: "READY", running: "SCHEDULING", paused: "PAUSED", completed: "COMPLETED", blocked: "UNSCHEDULABLE" } as const;
-const phases: PodPhase[] = ["pending", "scheduler", "selected", "starting", "ready"];
+const unitGlyph: Record<UnitType, string> = { fighter: "✈", tank: "▰", marine: "▲", gunner: "⌖" };
+type EnemyUnit = { id: number; unit: "fighter" | "ground"; status: "ready" | "destroyed" | "deploying" };
+const initialEnemies: EnemyUnit[] = Array.from({ length: 5 }, (_, index) => ({ id: index + 1, unit: index < 2 ? "fighter" : "ground", status: "ready" }));
 
 export function KubernetesPodSchedulingDemo() {
-  const [state, dispatch] = useReducer(kubernetesPodSchedulingReducer, initialKubernetesPodSchedulingState, (initial) => kubernetesPodSchedulingReducer(initial, { type: "start" }));
-  const readyPods = state.pods.filter((pod) => pod.phase === "ready");
-  const nodePods = state.pods.filter((pod) => ["selected", "starting", "ready"].includes(pod.phase));
-  const currentPod = state.pods.find((pod) => pod.id === state.activePodId) ?? state.pods.find((pod) => pod.phase === "pending");
+  const [state, dispatch] = useReducer(kubernetesPodSchedulingReducer, initialKubernetesPodSchedulingState);
+  const [battlePhase, setBattlePhase] = useState<"idle" | "incoming" | "impact" | "recovering">("idle");
+  const [enemyUnits, setEnemyUnits] = useState<EnemyUnit[]>(initialEnemies);
+  const readyPods = state.pods.filter((pod) => pod.status === "ready");
+  const missing = state.desiredReplicas - readyPods.length;
+  const cpu = readyPods.reduce((sum, pod) => sum + unitMeta[pod.unit].cpu, 0);
+  const memory = readyPods.reduce((sum, pod) => sum + unitMeta[pod.unit].memory, 0);
+  const deployingPods = state.pods.filter((pod) => pod.status === "deploying");
 
   useEffect(() => {
-    if (state.playback !== "running") return;
-    const timer = window.setInterval(() => dispatch({ type: "tick" }), 900);
-    return () => window.clearInterval(timer);
-  }, [state.playback]);
+    if (battlePhase !== "idle" || !readyPods.length) return;
+    const timer = window.setTimeout(() => setBattlePhase("incoming"), 2200);
+    return () => window.clearTimeout(timer);
+  }, [battlePhase, readyPods.length]);
 
-  useTemplateLoop(state.playback === "completed" || state.playback === "blocked", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
+  useEffect(() => {
+    if (battlePhase !== "incoming") return;
+    const timer = window.setTimeout(() => {
+      const victim = readyPods[Math.floor(Math.random() * readyPods.length)];
+      const readyEnemies = enemyUnits.filter((unit) => unit.status === "ready");
+      const enemyVictim = readyEnemies[Math.floor(Math.random() * readyEnemies.length)];
+      dispatch({ type: "enemy-wave", victimId: victim?.id });
+      setEnemyUnits((units) => units.map((unit) => unit.id === enemyVictim?.id ? { ...unit, status: "destroyed" } : unit));
+      setBattlePhase("impact");
+    }, 5700);
+    return () => window.clearTimeout(timer);
+  }, [battlePhase, readyPods, enemyUnits]);
+
+  useEffect(() => {
+    if (battlePhase !== "impact") return;
+    const timer = window.setTimeout(() => {
+      dispatch({ type: "reconcile" });
+      setEnemyUnits((units) => {
+        const destroyed = units.find((unit) => unit.status === "destroyed");
+        if (!destroyed) return units;
+        const nextId = Math.max(...units.map((unit) => unit.id)) + 1;
+        return [...units, { id: nextId, unit: destroyed.unit, status: "deploying" }];
+      });
+      setBattlePhase("recovering");
+    }, 2600);
+    return () => window.clearTimeout(timer);
+  }, [battlePhase]);
+
+  useEffect(() => {
+    if (!deployingPods.length) return;
+    const timer = window.setTimeout(() => {
+      dispatch({ type: "complete-deployment" });
+      setEnemyUnits((units) => units.filter((unit) => unit.status !== "destroyed").map((unit) => unit.status === "deploying" ? { ...unit, status: "ready" } : unit));
+      setBattlePhase("idle");
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [deployingPods.length]);
 
   return (
-    <section className={styles.demo} aria-labelledby="scheduling-demo-title">
-      <div className={styles.demoHeader}>
-        <div><p className={styles.eyebrow}>INTERACTIVE SCENARIO 01</p><h2 id="scheduling-demo-title">Kubernetes Pod Scheduling</h2><p className={styles.description}>未配置 Pod が Node を選ばれ、起動して処理可能になるまでの判断を追跡します。</p></div>
-        <div className={styles.stateBadge} data-state={state.playback}><span>CURRENT STATE</span><strong>{playbackLabels[state.playback]}</strong></div>
-      </div>
-      <div className={styles.statusPanel} aria-live="polite"><span className={styles.statusIcon} aria-hidden="true">{state.playback === "blocked" ? "!" : "i"}</span><div><strong>{playbackLabels[state.playback]}</strong><p>{state.decision}</p></div></div>
+    <section className={styles.demo} aria-labelledby="battle-title">
+      <header className={styles.header}>
+        <div><p className={styles.eyebrow}>KUBERNETES DEFENSE SIMULATOR</p><h2 id="battle-title">Cluster Defense Command</h2></div>
+        <div className={styles.clusterHealth} data-health={missing ? "warning" : "healthy"}><span>CLUSTER STATUS</span><strong>{missing ? `DEGRADED −${missing}` : "HEALTHY"}</strong></div>
+      </header>
 
-      <div className={styles.flow} aria-label="Pod の状態遷移">
-        {phases.map((phase, index) => <div className={styles.stepWrap} key={phase}><div className={`${styles.step} ${currentPod?.phase === phase ? styles.activeStep : ""}`}><span>{index + 1}</span><strong>{phaseLabels[phase]}</strong></div>{index < phases.length - 1 && <i aria-hidden="true">→</i>}</div>)}
+      <div className={styles.commandBar}>
+        <div><span>DESIRED STATE</span><strong>{state.desiredReplicas} Pods</strong></div>
+        <div><span>CURRENT / READY</span><strong>{readyPods.length} / {state.desiredReplicas}</strong></div>
+        <div><span>CPU REQUEST</span><strong>{cpu}m</strong></div>
+        <div><span>MEMORY</span><strong>{memory} Mi</strong></div>
+        <div><span>ENEMY WAVE</span><strong>#{String(state.wave).padStart(2, "0")}</strong></div>
       </div>
 
-      <div className={styles.workspace}>
-        <section className={styles.queue} aria-labelledby="queue-title">
-          <div className={styles.panelTitle}><div><span>QUEUE</span><h3 id="queue-title">Pending Pods</h3></div><strong>{state.pods.filter((pod) => pod.phase === "pending").length}</strong></div>
-          <div className={styles.podList}>{state.pods.filter((pod) => pod.phase === "pending" || pod.phase === "scheduler").map((pod) => <div className={styles.pod} data-phase={pod.phase} key={pod.id}><span className={styles.podShape} aria-hidden="true" /><div><strong>{pod.name}</strong><small>{phaseLabels[pod.phase]}</small></div></div>)}{!state.pods.some((pod) => pod.phase === "pending" || pod.phase === "scheduler") && <p className={styles.empty}>Pending Pod はありません</p>}</div>
+      <div className={styles.battlefield} data-phase={battlePhase} aria-label="空と陸の2D戦場">
+        <div className={styles.sky}><span>AIR NODE</span><i /><i /><i /></div>
+        <div className={styles.mountains} aria-hidden="true" />
+        <div className={styles.ground}><span>GROUND NODE</span></div>
+        <div className={styles.playerBase} aria-label="自軍基地 Node"><i>CF</i><strong>CONTROL<br />PLANE</strong><small>AUTO</small></div>
+        <div className={styles.enemyBase} aria-label="敵基地"><i>!</i><strong>ENEMY<br />BASE</strong></div>
+        <div className={styles.frontLine} aria-hidden="true"><span>FRONT LINE</span></div>
+        <div className={styles.units}>
+          {state.pods.map((pod, index) => {
+            const unitSlot = state.pods.slice(0, index).filter((candidate) => candidate.unit === pod.unit && candidate.status !== "destroyed").length;
+            return <article key={pod.id} className={styles.battleUnit} data-unit={pod.unit} data-status={pod.status} style={{ "--slot": index % 4, "--unit-slot": unitSlot } as CSSProperties} aria-label={`${unitMeta[pod.unit].label} Pod ${pod.id} ${pod.status}`}>
+            <span aria-hidden="true">{unitGlyph[pod.unit]}</span><b>{unitMeta[pod.unit].label}</b><small>Pod-{pod.id}</small><i />
+          </article>;})}
+        </div>
+        <div className={styles.enemies} aria-hidden="true">{enemyUnits.map((unit, index) => {
+          const unitSlot = enemyUnits.slice(0, index).filter((candidate) => candidate.unit === unit.unit && candidate.status !== "destroyed").length;
+          return <i key={unit.id} data-unit={unit.unit} data-status={unit.status} style={{ "--enemy": index, "--unit-slot": unitSlot } as CSSProperties}><b>{unit.unit === "fighter" ? "✈" : "◆"}</b></i>;
+        })}</div>
+        <div className={styles.shell} aria-hidden="true" />
+        <div className={styles.explosion} aria-hidden="true"><i /><i /><i /></div>
+        <aside className={styles.controller} aria-label="ReplicaSet controller"><span>REPLICASET</span><strong>{battlePhase === "recovering" ? "Podを再生成中…" : missing ? `${missing} Pod不足` : "Desired 8 / Ready 8"}</strong><i data-active={state.selfHealing} /></aside>
+      </div>
+
+      <div className={styles.console}>
+        <section className={styles.controls} aria-labelledby="operations-title"><span>AUTONOMOUS DEFENSE</span><h3 id="operations-title">常時自動迎撃</h3>
+          <p className={styles.operationStatus} data-phase={battlePhase} aria-live="polite">{battlePhase === "incoming" ? "両軍が中央戦線へ進軍中…" : battlePhase === "impact" ? "中央地帯で交戦中" : battlePhase === "recovering" ? "両軍が大破した部隊を補充中…" : "索敵中 — 次の敵襲を待機"}</p>
+          <div className={styles.forceSummary}><span>飛行機 <b>2</b></span><span>陸上戦車 <b>4</b></span><span>タワー砲手 <b>2</b></span></div>
         </section>
-        <section className={styles.scheduler} aria-labelledby="scheduler-title"><span className={styles.schedulerMark} aria-hidden="true">S</span><h3 id="scheduler-title">Scheduler</h3><p>空き容量を確認し、配置先を決定</p></section>
-        <section className={styles.node} aria-labelledby="node-title">
-          <div className={styles.panelTitle}><div><span>COMPUTE</span><h3 id="node-title">Node A</h3></div><strong>{nodePods.length}/{state.nodeCapacity}</strong></div>
-          <div className={styles.capacityBar} aria-label={`Node 使用量 ${nodePods.length}/${state.nodeCapacity}`}><span style={{ width: `${Math.min(100, nodePods.length / state.nodeCapacity * 100)}%` }} /></div>
-          <div className={styles.podGrid}>{nodePods.map((pod) => <div className={styles.pod} data-phase={pod.phase} key={pod.id}><span className={styles.podShape} aria-hidden="true" /><div><strong>{pod.name}</strong><small>{phaseLabels[pod.phase]}</small></div>{pod.phase === "ready" && <button type="button" onClick={() => dispatch({ type: "reschedule", podId: pod.id })}>再配置</button>}</div>)}</div>
-        </section>
+        <section className={styles.events} aria-labelledby="events-title"><div><span>CLUSTER EVENTS</span><h3 id="events-title">Event Log</h3></div><ol aria-live="polite">{[...state.events].reverse().map((event) => <li key={event.id} data-tone={event.tone}><time>{String(event.id).padStart(2, "0")}</time><p>{event.message}</p></li>)}</ol></section>
       </div>
-
-      <div className={styles.legend} aria-label="状態の凡例"><span><i className={styles.pendingKey} /> Pending / 評価中</span><span><i className={styles.startingKey} /> Starting</span><span><i className={styles.readyKey} /> Ready</span><span><i className={styles.blockedKey} /> 容量不足</span></div>
-      <div className={styles.controls} aria-label="シナリオ操作">
-        <div className={styles.transport}><button type="button" onClick={() => dispatch({ type: "start" })} disabled={state.playback === "running" || state.playback === "completed"}>▶ Start</button><button type="button" onClick={() => dispatch({ type: "pause" })} disabled={state.playback !== "running"}>Ⅱ Pause</button><button type="button" onClick={() => dispatch({ type: "reset" })}>↺ Reset</button></div>
-        <button type="button" onClick={() => dispatch({ type: "add-pod" })}>＋ Pod 追加</button>
-        <label><span>Node 容量 <output>{state.nodeCapacity}</output></span><input aria-label="Node 容量" type="range" min="1" max="6" value={state.nodeCapacity} onChange={(event) => dispatch({ type: "set-capacity", capacity: Number(event.target.value) })} /></label>
-      </div>
-      <div className={styles.results}><div><span>TOTAL PODS</span><strong>{state.pods.length}</strong></div><div><span>READY</span><strong>{readyPods.length}</strong></div><div><span>AVAILABLE SLOTS</span><strong>{Math.max(0, state.nodeCapacity - nodePods.length)}</strong></div></div>
-      <div className={styles.explanation}><div><span>WHY COMPUTE &amp; SCALING?</span><p>学習の中心が通信経路ではなく、計算資源の容量に応じてワークロードの配置と処理可能数が変わる仕組みだからです。</p></div><div><span>SAFE SANDBOX</span><p>Pod、Node、時間はすべて説明用の合成状態です。実 Kubernetes API やクラウド環境には接続しません。</p></div></div>
+      <footer className={styles.legend}><span><i>Cluster</i> 戦場全体</span><span><i>Node</i> 配置エリア</span><span><i>Pod</i> 戦闘部隊</span><span><i>Deployment</i> 編成命令</span></footer>
     </section>
   );
 }

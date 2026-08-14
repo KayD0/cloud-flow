@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import {
   HEALTH_STAGES, healthCheckReducer, initialHealthCheckState, stageDetails, type HealthStage,
 } from "@/lib/scenarios/reliability-recovery/health-check-isolation-and-rejoin/health-check-isolation-and-rejoin-scenario";
@@ -9,7 +10,7 @@ import styles from "./health-check-isolation-and-rejoin-demo.module.css";
 const stageIndex = (stage: HealthStage) => HEALTH_STAGES.indexOf(stage);
 
 export function HealthCheckIsolationAndRejoinDemo() {
-  const [state, dispatch] = useReducer(healthCheckReducer, initialHealthCheckState);
+  const [state, dispatch] = useReducer(healthCheckReducer, initialHealthCheckState, (initial) => healthCheckReducer(initial, { type: "start" }));
   const detail = stageDetails[state.stage];
   const currentIndex = stageIndex(state.stage);
   const checkCount = state.stage === "recovered" || state.stage === "healthy-again" ? state.recoveryChecks : state.failedChecks;
@@ -19,6 +20,8 @@ export function HealthCheckIsolationAndRejoinDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 900);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+  useEffect(() => { if (state.stage === "isolated" && !state.recoveryRequested) dispatch({ type: "recover" }); }, [state.recoveryRequested, state.stage]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="health-check-demo-title">

@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import { initialWorkQueueState, workQueueReducer, type ConsumerId } from "@/lib/scenarios/messaging-integration/work-queue/work-queue-scenario";
 import styles from "./work-queue-demo.module.css";
 
 const LABELS = { idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED" } as const;
 export function WorkQueueDemo() {
-  const [state, dispatch] = useReducer(workQueueReducer, initialWorkQueueState);
+  const [state, dispatch] = useReducer(workQueueReducer, initialWorkQueueState, (initial) => workQueueReducer(initial, { type: "start" }));
   const stopped = !state.consumers.a && !state.consumers.b;
   const status = stopped && state.playback === "running" ? "BACKLOG" : LABELS[state.playback];
   const explanation = state.playback === "idle" ? "合成Messageを発行し、稼働中のConsumerが競合して1件ずつ受け取る準備ができています。"
@@ -15,6 +16,7 @@ export function WorkQueueDemo() {
           : `${state.published}/${state.publicationVolume}件を発行済み。Queue ${state.queued}件を稼働中のConsumerへ配送しています。`;
 
   useEffect(() => { if (state.playback !== "running") return; const timer = window.setInterval(() => dispatch({ type: "tick" }), 650); return () => window.clearInterval(timer); }, [state.playback]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
   const toggle = (consumer: ConsumerId) => dispatch({ type: "toggle-consumer", consumer });
   return <section className={styles.demo} aria-labelledby="work-queue-title">
     <div className={styles.header}><div><p className={styles.eyebrow}>INTERACTIVE SCENARIO 01</p><h2 id="work-queue-title">Work Queue</h2><p>Producer → Queue → Consumer A / B の蓄積・競合配送・処理を観察します。</p></div><div className={styles.badge} data-state={status}><span>CURRENT STATE</span><strong>{status}</strong></div></div>

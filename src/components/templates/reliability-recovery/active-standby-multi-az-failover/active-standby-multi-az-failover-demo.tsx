@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import { failoverPhaseDetails, failoverScenarioReducer, initialFailoverScenarioState, type FailoverPhase } from "@/lib/scenarios/reliability-recovery/active-standby-multi-az-failover/active-standby-multi-az-failover-scenario";
 import styles from "./active-standby-multi-az-failover-demo.module.css";
 
 const phaseOrder: FailoverPhase[] = ["active-healthy", "down", "standby-promoting", "recovered"];
 
 export function ActiveStandbyMultiAzFailoverDemo() {
-  const [state, dispatch] = useReducer(failoverScenarioReducer, initialFailoverScenarioState);
+  const [state, dispatch] = useReducer(failoverScenarioReducer, initialFailoverScenarioState, (initial) =>
+    failoverScenarioReducer(failoverScenarioReducer(initial, { type: "inject-failure" }), { type: "begin-failover" }),
+  );
   const detail = failoverPhaseDetails[state.phase];
   const currentIndex = phaseOrder.indexOf(state.phase);
 
@@ -16,6 +19,8 @@ export function ActiveStandbyMultiAzFailoverDemo() {
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 700);
     return () => window.clearInterval(timer);
   }, [state.phase, state.playback]);
+  useEffect(() => { if (state.phase === "standby-promoting" && state.promotionProgress === 100) dispatch({ type: "confirm-recovery" }); }, [state.phase, state.promotionProgress]);
+  useTemplateLoop(state.phase === "recovered", () => { dispatch({ type: "reset" }); dispatch({ type: "inject-failure" }); dispatch({ type: "begin-failover" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="failover-demo-title">

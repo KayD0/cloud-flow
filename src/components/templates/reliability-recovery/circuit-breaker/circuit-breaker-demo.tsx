@@ -7,7 +7,7 @@ import styles from "./circuit-breaker-demo.module.css";
 const stateOrder: readonly CircuitState[] = ["closed", "open", "half-open"];
 
 export function CircuitBreakerDemo() {
-  const [state, dispatch] = useReducer(circuitBreakerReducer, initialCircuitBreakerState);
+  const [state, dispatch] = useReducer(circuitBreakerReducer, initialCircuitBreakerState, (initial) => circuitBreakerReducer(initial, { type: "start" }));
   const current = circuitStateDescriptions[state.circuit];
 
   useEffect(() => {

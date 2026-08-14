@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import { getConsumerLag, getStateExplanation, initialStreamConsumerLagState, streamConsumerLagReducer, type ConsumerId } from "@/lib/scenarios/messaging-integration/stream-consumer-lag/stream-consumer-lag-scenario";
 import styles from "./stream-consumer-lag-demo.module.css";
 
 const playbackLabels = { idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED" } as const;
 
 export function StreamConsumerLagDemo() {
-  const [state, dispatch] = useReducer(streamConsumerLagReducer, initialStreamConsumerLagState);
+  const [state, dispatch] = useReducer(streamConsumerLagReducer, initialStreamConsumerLagState, (initial) => streamConsumerLagReducer(initial, { type: "start" }));
   useEffect(() => {
     if (state.playback !== "running") return;
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 700);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   const lagA = getConsumerLag(state, "a");
   const lagB = getConsumerLag(state, "b");

@@ -1,79 +1,118 @@
-export type PodPhase = "pending" | "scheduler" | "selected" | "starting" | "ready";
-export type SchedulingPlayback = "idle" | "running" | "paused" | "completed" | "blocked";
+export type UnitType = "fighter" | "tank" | "marine" | "gunner";
+export type NodeType = "air" | "ground" | "base";
+export type PodStatus = "ready" | "destroyed" | "deploying";
 
-export interface SchedulingPod { id: number; name: string; phase: PodPhase; }
+export interface BattlePod {
+  id: number;
+  unit: UnitType;
+  node: NodeType;
+  status: PodStatus;
+}
+
+export interface BattleEvent { id: number; tone: "info" | "danger" | "success"; message: string; }
 export interface KubernetesPodSchedulingState {
-  playback: SchedulingPlayback;
-  nodeCapacity: number;
-  pods: readonly SchedulingPod[];
+  pods: readonly BattlePod[];
+  desiredReplicas: number;
+  selfHealing: boolean;
+  wave: number;
   nextPodId: number;
-  activePodId: number | null;
-  decision: string;
+  nextEventId: number;
+  events: readonly BattleEvent[];
 }
 
 export type KubernetesPodSchedulingAction =
-  | { type: "start" } | { type: "pause" } | { type: "reset" } | { type: "tick" }
-  | { type: "add-pod" } | { type: "set-capacity"; capacity: number }
-  | { type: "reschedule"; podId: number };
+  | { type: "enemy-wave"; victimId?: number }
+  | { type: "toggle-self-healing" }
+  | { type: "reconcile" }
+  | { type: "complete-deployment" }
+  | { type: "reset" };
 
-export const initialKubernetesPodSchedulingState: KubernetesPodSchedulingState = {
-  playback: "idle",
-  nodeCapacity: 3,
-  pods: [{ id: 1, name: "web-1", phase: "ready" }, { id: 2, name: "web-2", phase: "pending" }],
-  nextPodId: 3,
-  activePodId: null,
-  decision: "web-2 は未配置です。Start すると Scheduler が Node の空き容量を確認します。",
+export const unitMeta: Record<UnitType, { label: string; node: NodeType; cpu: number; memory: number }> = {
+  fighter: { label: "戦闘機", node: "air", cpu: 18, memory: 12 },
+  tank: { label: "戦車", node: "ground", cpu: 14, memory: 18 },
+  marine: { label: "海兵隊", node: "ground", cpu: 8, memory: 10 },
+  gunner: { label: "砲手", node: "base", cpu: 11, memory: 14 },
 };
 
-const clampCapacity = (value: number) => Math.min(6, Math.max(1, Math.round(value)));
-const occupiesNode = (phase: PodPhase) => phase === "selected" || phase === "starting" || phase === "ready";
-const updatePod = (state: KubernetesPodSchedulingState, podId: number, phase: PodPhase) =>
-  state.pods.map((pod) => pod.id === podId ? { ...pod, phase } : pod);
+const initialPods: BattlePod[] = [
+  { id: 1, unit: "fighter", node: "air", status: "ready" },
+  { id: 2, unit: "fighter", node: "air", status: "ready" },
+  { id: 3, unit: "tank", node: "ground", status: "ready" },
+  { id: 4, unit: "tank", node: "ground", status: "ready" },
+  { id: 5, unit: "tank", node: "ground", status: "ready" },
+  { id: 6, unit: "tank", node: "ground", status: "ready" },
+  { id: 7, unit: "gunner", node: "base", status: "ready" },
+  { id: 8, unit: "gunner", node: "base", status: "ready" },
+];
 
-function tick(state: KubernetesPodSchedulingState): KubernetesPodSchedulingState {
-  if (state.playback !== "running") return state;
-  const active = state.pods.find((pod) => pod.id === state.activePodId);
-  if (!active) {
-    const pending = state.pods.find((pod) => pod.phase === "pending");
-    if (!pending) return { ...state, playback: "completed", decision: "すべての Pod が Ready です。処理可能な完了状態になりました。" };
-    return { ...state, activePodId: pending.id, pods: updatePod(state, pending.id, "scheduler"), decision: `${pending.name} を Scheduler の評価対象にしました。Node の使用量と容量を比較します。` };
-  }
-  if (active.phase === "scheduler") {
-    const used = state.pods.filter((pod) => pod.id !== active.id && occupiesNode(pod.phase)).length;
-    if (used >= state.nodeCapacity) return { ...state, playback: "blocked", decision: `${active.name} は配置できません。Node 使用量 ${used}/${state.nodeCapacity} で空き容量がありません。` };
-    return { ...state, pods: updatePod(state, active.id, "selected"), decision: `${active.name} の配置先を Node A に決定しました。空き容量 ${state.nodeCapacity - used} が判断理由です。` };
-  }
-  if (active.phase === "selected") return { ...state, pods: updatePod(state, active.id, "starting"), decision: `${active.name} を Node A で Starting にしました。まだ処理は受け付けません。` };
-  if (active.phase === "starting") {
-    const pods = updatePod(state, active.id, "ready");
-    const hasPending = pods.some((pod) => pod.phase === "pending");
-    return { ...state, pods, activePodId: null, playback: hasPending ? "running" : "completed", decision: `${active.name} が Ready になり、処理可能になりました。` };
-  }
-  return { ...state, activePodId: null };
+export const initialKubernetesPodSchedulingState: KubernetesPodSchedulingState = {
+  pods: initialPods,
+  desiredReplicas: 8,
+  selfHealing: true,
+  wave: 0,
+  nextPodId: 9,
+  nextEventId: 2,
+  events: [{ id: 1, tone: "info", message: "Clusterは正常です。8/8 PodがReady。" }],
+};
+
+function appendEvent(state: KubernetesPodSchedulingState, tone: BattleEvent["tone"], message: string) {
+  return [...state.events, { id: state.nextEventId, tone, message }].slice(-5);
+}
+
+function recover(state: KubernetesPodSchedulingState): KubernetesPodSchedulingState {
+  const active = state.pods.filter((pod) => pod.status === "ready" || pod.status === "deploying");
+  const missing = state.desiredReplicas - active.length;
+  if (missing <= 0) return state;
+  const destroyed = [...state.pods].reverse().find((pod) => pod.status === "destroyed");
+  if (!destroyed) return state;
+  const replacements = Array.from({ length: missing }, (_, index) => ({
+    id: state.nextPodId + index,
+    unit: destroyed.unit,
+    node: unitMeta[destroyed.unit].node,
+    status: "deploying" as const,
+  }));
+  return {
+    ...state,
+    pods: [...state.pods, ...replacements],
+    nextPodId: state.nextPodId + missing,
+    nextEventId: state.nextEventId + 1,
+    events: appendEvent(state, "success", `ReplicaSetが不足を検知。${missing} Podを再作成しました。`),
+  };
 }
 
 export function kubernetesPodSchedulingReducer(state: KubernetesPodSchedulingState, action: KubernetesPodSchedulingAction): KubernetesPodSchedulingState {
   switch (action.type) {
-    case "start":
-      if (state.playback === "running" || (state.playback === "completed" && !state.pods.some((pod) => pod.phase === "pending"))) return state;
-      return { ...state, playback: "running" };
-    case "pause": return state.playback === "running" ? { ...state, playback: "paused" } : state;
+    case "enemy-wave": {
+      const ready = state.pods.filter((pod) => pod.status === "ready");
+      if (!ready.length) return state;
+      const victim = ready.find((pod) => pod.id === action.victimId) ?? ready[0];
+      const attacked: KubernetesPodSchedulingState = {
+        ...state,
+        wave: state.wave + 1,
+        pods: state.pods.map((pod) => pod.id === victim.id ? { ...pod, status: "destroyed" as const } : pod),
+        nextEventId: state.nextEventId + 1,
+        events: appendEvent(state, "danger", `Wave ${state.wave + 1}: ${unitMeta[victim.unit].label} Pod #${victim.id}が大破。`),
+      };
+      return attacked;
+    }
+    case "toggle-self-healing": return {
+      ...state,
+      selfHealing: !state.selfHealing,
+      nextEventId: state.nextEventId + 1,
+      events: appendEvent(state, "info", `Self-Healingを${state.selfHealing ? "無効" : "有効"}にしました。`),
+    };
+    case "reconcile": return recover(state);
+    case "complete-deployment": {
+      if (!state.pods.some((pod) => pod.status === "deploying")) return state;
+      return {
+        ...state,
+        pods: state.pods
+          .filter((pod) => pod.status !== "destroyed")
+          .map((pod) => pod.status === "deploying" ? { ...pod, status: "ready" as const } : pod),
+        nextEventId: state.nextEventId + 1,
+        events: appendEvent(state, "success", "新しいPodがNodeへ参加し、Readyになりました。"),
+      };
+    }
     case "reset": return initialKubernetesPodSchedulingState;
-    case "tick": return tick(state);
-    case "add-pod": {
-      const pod = { id: state.nextPodId, name: `web-${state.nextPodId}`, phase: "pending" as const };
-      return { ...state, pods: [...state.pods, pod], nextPodId: state.nextPodId + 1, playback: state.playback === "completed" ? "idle" : state.playback, decision: `${pod.name} を Pending キューへ追加しました。` };
-    }
-    case "set-capacity": {
-      const nodeCapacity = clampCapacity(action.capacity);
-      return { ...state, nodeCapacity, playback: state.playback === "blocked" ? "paused" : state.playback, decision: `Node 容量を ${nodeCapacity} Pod に変更しました。配置済み Pod は維持されます。` };
-    }
-    case "reschedule": {
-      const target = state.pods.find((pod) => pod.id === action.podId && pod.phase === "ready");
-      if (!target) return state;
-      return { ...state, pods: updatePod(state, target.id, "pending"), activePodId: null, playback: "idle", decision: `${target.name} を再配置するため Pending に戻しました。` };
-    }
   }
 }
-
-export const phaseLabels: Record<PodPhase, string> = { pending: "Pending Pod", scheduler: "Scheduler", selected: "Node selected", starting: "Starting", ready: "Ready" };

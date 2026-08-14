@@ -28,7 +28,7 @@ function phaseExplanation(phase: RetryPhase, attempt: number, maxAttempts: numbe
 }
 
 export function TimeoutAndBoundedRetryDemo() {
-  const [state, dispatch] = useReducer(timeoutAndBoundedRetryReducer, initialTimeoutAndBoundedRetryState);
+  const [state, dispatch] = useReducer(timeoutAndBoundedRetryReducer, initialTimeoutAndBoundedRetryState, (initial) => timeoutAndBoundedRetryReducer(initial, { type: "start" }));
   const terminal = state.playback === "completed";
   const delay = effectiveDelayMs(state);
 

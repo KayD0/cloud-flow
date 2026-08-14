@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import { databaseReplicaPromotionReducer, describeDatabaseReplicaPromotionState, initialDatabaseReplicaPromotionState, type PromotionPhase } from "@/lib/scenarios/reliability-recovery/database-replica-promotion/database-replica-promotion-scenario";
 import styles from "./database-replica-promotion-demo.module.css";
 
@@ -13,13 +14,14 @@ const phases: { id: PromotionPhase; label: string; detail: string }[] = [
 ];
 
 export function DatabaseReplicaPromotionDemo() {
-  const [state, dispatch] = useReducer(databaseReplicaPromotionReducer, initialDatabaseReplicaPromotionState);
+  const [state, dispatch] = useReducer(databaseReplicaPromotionReducer, initialDatabaseReplicaPromotionState, (initial) => databaseReplicaPromotionReducer(initial, { type: "start" }));
   const currentIndex = phases.findIndex((phase) => phase.id === state.phase);
   useEffect(() => {
     if (state.playback !== "running") return;
     const timer = window.setInterval(() => dispatch({ type: "tick" }), 1100);
     return () => window.clearInterval(timer);
   }, [state.playback]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
     <section className={styles.demo} aria-labelledby="promotion-demo-title">

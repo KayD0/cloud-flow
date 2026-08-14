@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTemplateLoop } from "@/components/templates/use-template-loop";
 import { initialRetryDeadLetterState, retryDeadLetterReducer, retryTickMilliseconds } from "@/lib/scenarios/messaging-integration/retry-and-dead-letter-queue/retry-and-dead-letter-queue-scenario";
 import styles from "./retry-and-dead-letter-queue-demo.module.css";
 
 const PLAYBACK_LABELS = { idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED" } as const;
 
 export function RetryAndDeadLetterQueueDemo() {
-  const [state, dispatch] = useReducer(retryDeadLetterReducer, initialRetryDeadLetterState);
+  const [state, dispatch] = useReducer(retryDeadLetterReducer, initialRetryDeadLetterState, (initial) => retryDeadLetterReducer(initial, { type: "start" }));
   useEffect(() => {
     if (state.playback !== "running") return;
     const timer = window.setTimeout(() => dispatch({ type: "tick" }), retryTickMilliseconds);
     return () => window.clearTimeout(timer);
   }, [state.playback, state.stage, state.retryCount]);
+  useTemplateLoop(state.playback === "completed", () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return <section className={styles.demo} aria-labelledby="retry-demo-title">
     <div className={styles.header}><div><p className={styles.eyebrow}>INTERACTIVE SCENARIO 01</p><h2 id="retry-demo-title">Retry and Dead Letter Queue</h2><p className={styles.description}>Queue → Consumer failure → Retry wait → Consumer / DLQ の判断を、1件の合成メッセージで追跡します。</p></div><div className={styles.badge} data-playback={state.playback}><span>CURRENT STATE</span><strong>{PLAYBACK_LABELS[state.playback]}</strong></div></div>
