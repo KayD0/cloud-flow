@@ -2,14 +2,14 @@ import type { DesignTemplate } from "../../model";
 
 const template = {
   slug: "vpc-vnet-peering",
-  name: "VPC / VNet Peering",
-  summary: "Peeringの確立前後でネットワーク間の到達可能性が変わる様子を示します。",
+  name: "ピアリング・ブリッジ",
+  summary: "重複しない VPC / VNet を選び、Peering と双方向 Route を構成して到達性を完成させる学習ミニゲームです。",
   primaryCategory: "network-connectivity",
-  tags: ["VPC / VNet Peering", "Reachability", "Network & Connectivity"],
-  concepts: ["VPC / VNet Peering", "Bidirectional connectivity", "Network isolation"],
+  tags: ["VPC / VNet Peering", "Bidirectional Route", "Network & Connectivity"],
+  concepts: ["VPC / VNet Peering", "CIDR overlap", "Bidirectional connectivity"],
   difficulty: "Beginner",
   status: "available",
-  motions: ["State transition", "Bidirectional flow"],
+  motions: ["State transition", "Bidirectional flow", "Result feedback"],
   actions: ["Play", "Pause", "Reset"],
   href: "/templates/network-connectivity/vpc-vnet-peering",
 } as const satisfies DesignTemplate;
