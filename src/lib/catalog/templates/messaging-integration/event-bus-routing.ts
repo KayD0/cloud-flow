@@ -3,13 +3,13 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "event-bus-routing",
   name: "Event Bus Routing",
-  summary: "イベント属性とRuleによる非同期の配送先変更を観察します。",
+  summary: "イベント属性をRuleで評価し、非同期イベントの配送先が変わる様子を観察します。",
   primaryCategory: "messaging-integration",
-  tags: ["Event Bus Routing", "messaging-integration"],
-  concepts: ["Event Bus Routing"],
+  tags: ["Event Bus", "Rule evaluation", "messaging-integration"],
+  concepts: ["Event Bus Routing", "Content-based routing"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
+  status: "available",
+  motions: ["Producer → Event Bus → Rule evaluation → Consumer"],
   actions: ["Play", "Pause", "Reset"],
   href: "/templates/messaging-integration/event-bus-routing",
 } as const satisfies DesignTemplate;
