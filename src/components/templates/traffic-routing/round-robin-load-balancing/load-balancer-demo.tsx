@@ -1,199 +1,189 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useState } from "react";
 import {
-  chooseHealthyServer,
-  getScore,
+  advanceLoadBalancerScene,
+  getActiveServer,
+  getScenePhase,
   initialLoadBalancerState,
-  loadBalancerReducer,
-  REQUEST_GOAL,
-  SERVER_IDS,
-  type RequestToken,
+  type ScenePhase,
   type ServerId,
 } from "@/lib/scenarios/traffic-routing/round-robin-load-balancing/load-balancer-scenario";
 import styles from "./load-balancer-demo.module.css";
 
-const SERVER_COORDINATES: Record<ServerId, { x: number; y: number }> = {
-  "server-a": { x: 730, y: 92 },
-  "server-b": { x: 730, y: 225 },
-  "server-c": { x: 730, y: 358 },
+const SERVER_Y: Record<ServerId, number> = {
+  "server-a": 105,
+  "server-b": 250,
+  "server-c": 395,
 };
 
-const SERVER_LABELS: Record<ServerId, string> = {
-  "server-a": "Server A",
-  "server-b": "Server B",
-  "server-c": "Server C",
+const PHASE_LABELS: Record<ScenePhase, { step: string; title: string; detail: string }> = {
+  arrival: {
+    step: "01 / ARRIVAL",
+    title: "Request が到着",
+    detail: "受信キューから Load Balancer へ、新しい Request を送ります。",
+  },
+  routing: {
+    step: "02 / ROUTING",
+    title: "次の Server を選択",
+    detail: "Round Robin ポインターが順番どおりの Server を指します。",
+  },
+  processing: {
+    step: "03 / PROCESSING",
+    title: "Request を処理中",
+    detail: "選ばれた Server だけが処理中になり、他は次の Request を待ちます。",
+  },
+  response: {
+    step: "04 / RESPONSE",
+    title: "Response を返却",
+    detail: "処理済み Response が戻り、ポインターは次の Server へ進みます。",
+  },
 };
 
-function requestPosition(request: RequestToken) {
-  const loadBalancer = { x: 420, y: 225 };
-  const server = SERVER_COORDINATES[request.target];
-  const ratio = Math.min(1, request.progress);
-  return {
-    x: loadBalancer.x + (server.x - loadBalancer.x) * ratio,
-    y: loadBalancer.y + (server.y - loadBalancer.y) * ratio,
-  };
+function tokenPosition(phase: ScenePhase, target: ServerId) {
+  if (phase === "arrival") return { x: 176, y: 250 };
+  if (phase === "routing") return { x: 468, y: 250 };
+  if (phase === "processing") return { x: 758, y: SERVER_Y[target] };
+  return { x: 176, y: 250 };
 }
 
 export function LoadBalancerDemo() {
-  const [state, dispatch] = useReducer(loadBalancerReducer, initialLoadBalancerState);
-  const expectedServer = chooseHealthyServer(state);
-  const score = getScore(state);
-  const remaining = REQUEST_GOAL - state.correctDecisions;
-  const isFinished = state.outcome !== "playing";
+  const [state, setState] = useState(initialLoadBalancerState);
+  const phase = getScenePhase(state);
+  const activeServer = getActiveServer(state);
+  const phaseCopy = PHASE_LABELS[phase];
+  const token = tokenPosition(phase, activeServer.id);
 
   useEffect(() => {
-    if (state.playback !== "running") return;
-    const timer = window.setInterval(() => dispatch({ type: "tick" }), 650);
+    const timer = window.setInterval(() => {
+      setState((current) => advanceLoadBalancerScene(current));
+    }, 1400);
     return () => window.clearInterval(timer);
-  }, [state.playback]);
+  }, []);
 
   return (
-    <section className={styles.game} aria-labelledby="game-title">
-      <header className={styles.gameHeader}>
+    <section className={styles.scene} aria-labelledby="dealer-title" data-phase={phase}>
+      <header className={styles.sceneHeader}>
         <div>
-          <p className={styles.eyebrow}>TRAFFIC &amp; ROUTING · MINI GAME 01</p>
-          <h2 id="game-title">ラウンドロビン・ディーラー</h2>
-          <p className={styles.lead}>あなたは Load Balancer 係。到着順に Request を次の Healthy な Server へ配り、公平な循環を守ってください。</p>
+          <p className={styles.eyebrow}>TRAFFIC &amp; ROUTING · AUTO PLAY</p>
+          <h2 id="dealer-title">ラウンドロビン・ディーラー</h2>
+          <p className={styles.lead}>
+            到着した Request を Server A、B、C へ順番に配り、処理と Response の循環を俯瞰します。
+          </p>
         </div>
-        <div className={styles.modePicker} aria-label="ゲームモード">
-          <button type="button" aria-pressed={state.mode === "guided"} onClick={() => dispatch({ type: "select-mode", mode: "guided" })}>
-            <strong>Guided</strong><span>次の配送先を表示</span>
-          </button>
-          <button type="button" aria-pressed={state.mode === "challenge"} onClick={() => dispatch({ type: "select-mode", mode: "challenge" })}>
-            <strong>Challenge</strong><span>3 指標で採点</span>
-          </button>
+        <div className={styles.loopBadge} aria-label={`自動再生、周回 ${state.cycle}`}>
+          <span className={styles.pulse} aria-hidden="true" />
+          <span>AUTO LOOP</span>
+          <strong>ROUND {String(state.cycle).padStart(2, "0")}</strong>
         </div>
       </header>
 
-      <div className={styles.rules} aria-label="ゲームルール">
-        <article><span>ROLE</span><strong>Load Balancer 係</strong></article>
-        <article><span>GOAL</span><strong>{REQUEST_GOAL} 件を公平に処理</strong></article>
-        <article><span>WIN</span><strong>順番と Healthy を守る</strong></article>
-        <article><span>LOSE</span><strong>Down 配送 / 順番飛ばし</strong></article>
-      </div>
-
-      <div className={styles.hud}>
-        <div><span>PROGRESS</span><strong>{state.correctDecisions} / {REQUEST_GOAL}</strong><small>残り {remaining} 件</small></div>
-        <div><span>INBOX</span><strong>{state.pendingRequests}</strong><small>未配送 Request</small></div>
-        <div><span>ACCURACY</span><strong>{score.accuracy}</strong><small>/ 100</small></div>
-        <div><span>FAIRNESS</span><strong>{score.fairness}</strong><small>/ 100</small></div>
-        <div><span>AVAILABILITY</span><strong>{score.availability}</strong><small>/ 100</small></div>
-      </div>
-
-      <div className={`${styles.feedback} ${styles[state.feedback.tone]}`} role="status" aria-live="polite">
-        <span aria-hidden="true">{state.feedback.tone === "danger" ? "!" : state.feedback.tone === "success" ? "✓" : "i"}</span>
-        <div><strong>{state.feedback.title}</strong><p>{state.feedback.detail}</p></div>
+      <div className={styles.statusBar} aria-live="polite" aria-atomic="true">
+        <span>{phaseCopy.step}</span>
+        <strong>{phaseCopy.title}</strong>
+        <p>{phaseCopy.detail}</p>
+        <code>REQ-{String(state.requestNumber).padStart(3, "0")} → {activeServer.label}</code>
       </div>
 
       <div className={styles.playfield}>
-        <div className={styles.canvasWrap}>
-          <svg className={styles.canvas} viewBox="0 0 830 450" role="img" aria-labelledby="canvas-title canvas-desc">
-            <title id="canvas-title">Request Queue、Load Balancer、3 台の Server の配送状況</title>
-            <desc id="canvas-desc">未配送数は {state.pendingRequests} 件。Server A は {state.servers["server-a"]}、Server B は {state.servers["server-b"]}、Server C は {state.servers["server-c"]} です。</desc>
+        <div className={styles.board}>
+          <svg viewBox="0 0 940 500" role="img" aria-labelledby="topology-title topology-description">
+            <title id="topology-title">Round Robin Load Balancing の通信経路</title>
+            <desc id="topology-description">
+              Request Queue から Load Balancer を経由し、Server A、B、C へ順番に Request を配送して Response を返します。
+            </desc>
             <defs>
-              <marker id="dealer-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" /></marker>
-              <pattern id="dealer-stripes" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" /></pattern>
+              <marker id="request-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 0 10 5 0 10z" />
+              </marker>
+              <marker id="response-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 0 10 5 0 10z" />
+              </marker>
+              <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+                <path d="M28 0H0V28" />
+              </pattern>
             </defs>
-            <g className={styles.connections}>
-              <path className={styles.queueLine} d="M172 225 H350" />
-              {SERVER_IDS.map((serverId) => {
-                const point = SERVER_COORDINATES[serverId];
-                return <path key={serverId} className={state.servers[serverId] === "down" ? styles.excludedLine : undefined} d={`M490 225 L${point.x - 68} ${point.y}`} />;
-              })}
+
+            <rect className={styles.grid} width="940" height="500" rx="20" />
+            <g className={styles.paths}>
+              <path className={styles.requestPath} d="M178 250H398" />
+              <path className={styles.responsePath} d="M398 276H178" />
+              {(Object.entries(SERVER_Y) as [ServerId, number][]).map(([serverId, y]) => (
+                <path
+                  key={serverId}
+                  className={serverId === activeServer.id ? styles.activePath : styles.serverPath}
+                  d={`M538 250 C630 250 650 ${y} 730 ${y}`}
+                />
+              ))}
             </g>
-            <g className={styles.queueNode} transform="translate(42 174)">
-              <rect width="130" height="102" rx="18" />
-              <text x="65" y="32" textAnchor="middle" className={styles.nodeMicro}>REQUEST QUEUE</text>
-              <text x="65" y="68" textAnchor="middle" className={styles.queueCount}>{state.pendingRequests}</text>
-              <text x="65" y="88" textAnchor="middle">WAITING</text>
+
+            <g className={styles.queueNode} transform="translate(42 197)">
+              <rect width="136" height="106" rx="16" />
+              <path d="M28 37h80M28 53h62M28 69h45" />
+              <text x="68" y="90" textAnchor="middle">REQUEST QUEUE</text>
             </g>
-            <g className={styles.balancerNode} transform="translate(350 165)">
-              <rect width="140" height="120" rx="22" />
-              <text x="70" y="43" textAnchor="middle" className={styles.balanceSymbol}>⇄</text>
-              <text x="70" y="72" textAnchor="middle">Load Balancer</text>
-              <text x="70" y="96" textAnchor="middle" className={styles.nodeMicro}>ROUND ROBIN</text>
+
+            <g className={styles.balancerNode} transform="translate(398 180)">
+              <rect width="140" height="140" rx="24" />
+              <circle cx="70" cy="54" r="25" />
+              <path d="M70 36v36m-14-11 14 11 14-11" />
+              <text x="70" y="104" textAnchor="middle">LOAD BALANCER</text>
+              <text x="70" y="120" textAnchor="middle">ROUND ROBIN</text>
             </g>
-            {SERVER_IDS.map((serverId) => {
-              const point = SERVER_COORDINATES[serverId];
-              const down = state.servers[serverId] === "down";
+
+            {state.servers.map((server) => {
+              const isActive = server.id === activeServer.id;
               return (
-                <g key={serverId} className={`${styles.serverNode} ${down ? styles.downNode : ""}`} transform={`translate(${point.x - 68} ${point.y - 43})`}>
-                  <rect width="136" height="86" rx="16" />
-                  {down && <rect className={styles.downPattern} width="136" height="86" rx="16" />}
-                  <path className={styles.statusShape} d={down ? "M14 13 l10 10 m0-10 l-10 10" : "M14 18 l4 4 8-10"} />
-                  <text x="68" y="38" textAnchor="middle">{SERVER_LABELS[serverId]}</text>
-                  <text x="68" y="61" textAnchor="middle" className={styles.nodeMicro}>{down ? "DOWN · EXCLUDED" : `HEALTHY · ${state.deliveredByServer[serverId]} DEALT`}</text>
+                <g
+                  key={server.id}
+                  className={`${styles.serverNode} ${isActive ? styles.activeServer : ""}`}
+                  transform={`translate(730 ${SERVER_Y[server.id] - 50})`}
+                >
+                  <rect width="170" height="100" rx="17" />
+                  <circle cx="24" cy="24" r="7" />
+                  <path d="M19 47h132M19 62h132" />
+                  <text x="85" y="83" textAnchor="middle">{server.label.toUpperCase()}</text>
                 </g>
               );
             })}
-            <g className={styles.requests} aria-hidden="true">
-              {state.requests.map((request) => {
-                const position = requestPosition(request);
-                return <circle key={request.id} cx={position.x} cy={position.y} r="7" />;
-              })}
+
+            <g
+              className={`${styles.packet} ${phase === "response" ? styles.responsePacket : ""}`}
+              style={{ transform: `translate(${token.x}px, ${token.y}px)` }}
+              aria-hidden="true"
+            >
+              <rect x="-31" y="-16" width="62" height="32" rx="8" />
+              <text textAnchor="middle" dominantBaseline="middle">{phase === "response" ? "RES" : "REQ"}</text>
             </g>
           </svg>
         </div>
 
-        <aside className={styles.dealerPanel} aria-labelledby="decision-title">
-          <p className={styles.eyebrow}>YOUR DECISION</p>
-          <h3 id="decision-title">次の配送先を選ぶ</h3>
-          {state.mode === "guided" ? (
-            <p className={styles.guide}>ガイド: 次は <strong>{expectedServer ? SERVER_LABELS[expectedServer] : "復旧した Server"}</strong>。Down を飛ばし、最後の配送先の次から続けます。</p>
-          ) : (
-            <p className={styles.guide}>Challenge: 状態と各配送数を見て、次の Healthy な宛先を判断してください。</p>
-          )}
-          <div className={styles.dealButtons}>
-            {SERVER_IDS.map((serverId, index) => {
-              const down = state.servers[serverId] === "down";
+        <aside className={styles.serverPanel} aria-label="Server の現在状態">
+          <div className={styles.pointerCard}>
+            <span>NEXT POINTER</span>
+            <strong>{activeServer.label}</strong>
+            <small>順番 {state.targetIndex + 1} / 3</small>
+          </div>
+          <ol className={styles.serverList}>
+            {state.servers.map((server, index) => {
+              const isActive = server.id === activeServer.id;
               return (
-                <button key={serverId} type="button" onClick={() => dispatch({ type: "deal", serverId })} disabled={state.playback !== "running" || state.pendingRequests === 0 || isFinished}>
-                  <span>{index + 1}</span><strong>{SERVER_LABELS[serverId]}</strong><small>{down ? "DOWN" : `HEALTHY · 配送 ${state.deliveredByServer[serverId]}`}</small>
-                </button>
+                <li key={server.id} className={isActive ? styles.activeCard : undefined}>
+                  <span className={styles.serverOrder}>{index + 1}</span>
+                  <div><strong>{server.label}</strong><small>{server.load}</small></div>
+                  <output aria-label={`${server.label} の処理済み件数`}>{server.handled} handled</output>
+                </li>
               );
             })}
-          </div>
-          <p className={styles.keyboardHint}>Tab で移動、Enter / Space で配送できます。</p>
+          </ol>
         </aside>
       </div>
 
-      <div className={styles.controlDeck}>
-        <div className={styles.transport} aria-label="ゲーム進行">
-          <button type="button" onClick={() => dispatch({ type: "start" })} disabled={state.playback === "running" || isFinished}>▶ Start</button>
-          <button type="button" onClick={() => dispatch({ type: "pause" })} disabled={state.playback !== "running"}>Ⅱ Pause</button>
-          <button type="button" onClick={() => dispatch({ type: "reset" })}>↺ Reset / Retry</button>
-        </div>
-        <label><span>Traffic <output>{state.traffic} req / wave</output></span><input aria-label="1回に到着するトラフィック量" type="range" min="1" max="5" step="1" value={state.traffic} onChange={(event) => dispatch({ type: "set-traffic", traffic: Number(event.target.value) })} /></label>
-        <label><span>Animation <output>{state.speed.toFixed(1)}×</output></span><input aria-label="アニメーション速度" type="range" min="0.5" max="2" step="0.5" value={state.speed} onChange={(event) => dispatch({ type: "set-speed", speed: Number(event.target.value) })} /></label>
-      </div>
-
-      <div className={styles.failureDeck}>
-        <div><p className={styles.eyebrow}>FAILURE INJECTION</p><strong>障害を注入して、除外と復帰を試す</strong></div>
-        <div>
-          {SERVER_IDS.map((serverId) => {
-            const down = state.servers[serverId] === "down";
-            return <button key={serverId} type="button" aria-pressed={down} onClick={() => dispatch({ type: down ? "recover" : "fail", serverId })}>{down ? "+ 復旧" : "× 停止"} {SERVER_LABELS[serverId]}</button>;
-          })}
-        </div>
-      </div>
-
-      {isFinished && (
-        <section className={`${styles.result} ${state.outcome === "won" ? styles.resultWin : styles.resultLose}`} aria-labelledby="result-title">
-          <div><p className={styles.eyebrow}>ROUND RESULT</p><h3 id="result-title">{state.outcome === "won" ? "CLEAR — 公平な配送を完了" : "ROUND FAILED — 原因を確認"}</h3><p>{state.feedback.detail}</p></div>
-          <dl aria-label="Challenge 採点">
-            <div><dt>正確性</dt><dd>{score.accuracy}</dd></div>
-            <div><dt>公平性</dt><dd>{score.fairness}</dd></div>
-            <div><dt>可用性</dt><dd>{score.availability}</dd></div>
-            <div><dt>総合</dt><dd>{score.total}</dd></div>
-          </dl>
-          <button type="button" onClick={() => dispatch({ type: "reset" })}>同じ初期状態で再挑戦</button>
-        </section>
-      )}
-
-      <footer className={styles.learningFooter}>
-        <p><strong>判断の原則:</strong> Round Robin は配送ポインターを順に進め、Down を候補から除外します。復旧後は循環へ戻すことで、Healthy な宛先間の公平性と可用性を両立します。</p>
-        <p>固定の合成データだけを使う説明用ゲームです。実環境へ接続・操作せず、表示値は性能や可用性を保証しません。</p>
+      <footer className={styles.legend}>
+        <span><i className={styles.solidLine} /> Request direction</span>
+        <span><i className={styles.dashedLine} /> Response direction</span>
+        <span><i className={styles.activeMark}>→</i> Current route</span>
+        <p>表示値と所要時間は UI 表現用の合成データです。実環境には接続していません。</p>
       </footer>
     </section>
   );
