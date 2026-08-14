@@ -1,54 +1,84 @@
-import type { ScenarioControls } from "@/lib/infrastructure/model";
+export type GameMode = "guided" | "challenge";
+export type GamePhase = "ready" | "playing" | "paused" | "won" | "failed";
+export type PeerChoice = "network-b" | "network-c" | null;
+export type FailureReason = "cidr-overlap" | "one-way-route" | "missing-peer" | null;
 
-export type PeeringStatus = "disconnected" | "connected";
-export type TrafficDirection = "a-to-b" | "b-to-a";
-export type ReachabilityResult = "pending" | "reachable" | "blocked";
+export interface PeeringScore {
+  accuracy: number;
+  safety: number;
+  completeness: number;
+  total: number;
+}
 
-export interface VpcVnetPeeringState extends ScenarioControls {
-  peering: PeeringStatus;
-  direction: TrafficDirection;
-  progress: number;
-  result: ReachabilityResult;
+export interface VpcVnetPeeringState {
+  mode: GameMode;
+  phase: GamePhase;
+  selectedPeer: PeerChoice;
+  routeAToPeer: boolean;
+  routePeerToA: boolean;
+  checks: number;
+  failureReason: FailureReason;
+  score: PeeringScore | null;
 }
 
 export type VpcVnetPeeringAction =
+  | { type: "set-mode"; mode: GameMode }
   | { type: "start" }
   | { type: "pause" }
   | { type: "reset" }
-  | { type: "connect" }
-  | { type: "disconnect" }
-  | { type: "set-direction"; direction: TrafficDirection }
-  | { type: "tick" };
+  | { type: "select-peer"; peer: Exclude<PeerChoice, null> }
+  | { type: "toggle-route"; direction: "a-to-peer" | "peer-to-a" }
+  | { type: "check" };
 
 export const initialVpcVnetPeeringState: VpcVnetPeeringState = {
-  playback: "idle",
-  speed: 1,
-  traffic: 1,
-  peering: "disconnected",
-  direction: "a-to-b",
-  progress: 0,
-  result: "pending",
+  mode: "guided",
+  phase: "ready",
+  selectedPeer: null,
+  routeAToPeer: false,
+  routePeerToA: false,
+  checks: 0,
+  failureReason: null,
+  score: null,
 };
 
-function prepare(state: VpcVnetPeeringState): VpcVnetPeeringState {
-  return { ...state, playback: "idle", progress: 0, result: "pending" };
+function freshState(mode: GameMode): VpcVnetPeeringState {
+  return { ...initialVpcVnetPeeringState, mode };
 }
 
-function tick(state: VpcVnetPeeringState): VpcVnetPeeringState {
-  if (state.playback !== "running") return state;
+export function calculatePeeringScore(
+  selectedPeer: PeerChoice,
+  routeAToPeer: boolean,
+  routePeerToA: boolean,
+  checks: number,
+): PeeringScore {
+  const accuracy = selectedPeer === "network-b" ? 40 : 0;
+  const safety = selectedPeer !== "network-c" ? 30 : 0;
+  const completeness = routeAToPeer && routePeerToA ? 30 : 0;
+  const retryPenalty = Math.max(0, checks - 1) * 5;
+  return {
+    accuracy,
+    safety,
+    completeness,
+    total: Math.max(0, accuracy + safety + completeness - retryPenalty),
+  };
+}
 
-  const boundary = 0.5;
-  const nextProgress = Math.min(1, state.progress + 0.1);
+function checkConfiguration(state: VpcVnetPeeringState): VpcVnetPeeringState {
+  const checks = state.checks + 1;
+  const score = state.mode === "challenge"
+    ? calculatePeeringScore(state.selectedPeer, state.routeAToPeer, state.routePeerToA, checks)
+    : null;
 
-  if (state.peering === "disconnected" && nextProgress >= boundary) {
-    return { ...state, playback: "paused", progress: boundary, result: "blocked" };
+  if (state.selectedPeer === null) {
+    return { ...state, phase: "failed", checks, failureReason: "missing-peer", score };
   }
-
-  if (nextProgress >= 1) {
-    return { ...state, playback: "paused", progress: 1, result: "reachable" };
+  if (state.selectedPeer === "network-c") {
+    return { ...state, phase: "failed", checks, failureReason: "cidr-overlap", score };
   }
-
-  return { ...state, progress: nextProgress };
+  if (!state.routeAToPeer || !state.routePeerToA) {
+    return { ...state, phase: "failed", checks, failureReason: "one-way-route", score };
+  }
+  return { ...state, phase: "won", checks, failureReason: null, score };
 }
 
 export function vpcVnetPeeringReducer(
@@ -56,33 +86,52 @@ export function vpcVnetPeeringReducer(
   action: VpcVnetPeeringAction,
 ): VpcVnetPeeringState {
   switch (action.type) {
+    case "set-mode":
+      return freshState(action.mode);
     case "start":
-      return {
-        ...state,
-        playback: "running",
-        progress: state.result === "pending" ? state.progress : 0,
-        result: "pending",
-      };
+      return { ...state, phase: "playing", failureReason: null, score: null };
     case "pause":
-      return { ...state, playback: "paused" };
+      return state.phase === "playing" ? { ...state, phase: "paused" } : state;
     case "reset":
-      return initialVpcVnetPeeringState;
-    case "connect":
-      return prepare({ ...state, peering: "connected" });
-    case "disconnect":
-      return prepare({ ...state, peering: "disconnected" });
-    case "set-direction":
-      return prepare({ ...state, direction: action.direction });
-    case "tick":
-      return tick(state);
+      return freshState(state.mode);
+    case "select-peer":
+      return state.phase === "playing"
+        ? { ...state, selectedPeer: action.peer, failureReason: null, score: null }
+        : state;
+    case "toggle-route":
+      if (state.phase !== "playing") return state;
+      return action.direction === "a-to-peer"
+        ? { ...state, routeAToPeer: !state.routeAToPeer, failureReason: null, score: null }
+        : { ...state, routePeerToA: !state.routePeerToA, failureReason: null, score: null };
+    case "check":
+      return state.phase === "playing" ? checkConfiguration(state) : state;
   }
 }
 
+export function getGuidedStep(state: VpcVnetPeeringState): string {
+  if (state.phase === "ready") return "Start を押して設計を始めましょう。";
+  if (state.phase === "paused") return "Pause 中です。Start で設計を再開できます。";
+  if (state.phase === "won" || state.phase === "failed") return "結果を確認し、Reset で同じシナリオに再挑戦しましょう。";
+  if (state.selectedPeer === null) return "手順 1/3: Network A と CIDR が重複しない Peer を選びます。";
+  if (state.selectedPeer === "network-c") return "Network C は A と CIDR が重複します。別の Peer を選びましょう。";
+  if (!state.routeAToPeer || !state.routePeerToA) return "手順 2/3: 往路と復路の両方に Route を設定します。";
+  return "手順 3/3: 疎通確認で双方向経路を検証します。";
+}
+
 export function describeVpcVnetPeeringState(state: VpcVnetPeeringState): string {
-  const route = state.direction === "a-to-b" ? "A から B" : "B から A";
-  if (state.result === "reachable") return `${route} へ到達しました。Peering が接続済みのため通信できます。`;
-  if (state.result === "blocked") return `${route} の通信は Peering 境界で遮断されました。接続が確立されていません。`;
-  if (state.playback === "running") return `${route} へ到達可能性を確認しています。`;
-  if (state.playback === "paused" && state.progress > 0) return `${route} への確認を一時停止しています。`;
-  return `${route} への通信を開始できます。現在の Peering は${state.peering === "connected" ? "接続済み" : "切断中"}です。`;
+  if (state.phase === "won") {
+    return "接続成功。CIDR が重複しない Network B を選び、往路と復路の Route が揃ったため、双方向通信が成立しました。";
+  }
+  if (state.failureReason === "cidr-overlap") {
+    return "接続失敗。Network A と Network C は 10.10.0.0/16 が重複するため、Peering の経路を一意に決定できません。";
+  }
+  if (state.failureReason === "one-way-route") {
+    return "疎通失敗。Peering だけでは通信は完成せず、送信側と返信側の両方に相手 CIDR への Route が必要です。";
+  }
+  if (state.failureReason === "missing-peer") {
+    return "疎通失敗。接続先の Peer が未選択です。CIDR を比較して接続先を選んでください。";
+  }
+  if (state.phase === "paused") return "ゲームは一時停止中です。現在の設計は保持されています。";
+  if (state.phase === "playing") return "設計中です。Peer と双方向 Route を設定して疎通確認してください。";
+  return "開始前です。役割・目的・勝敗条件を確認して Start を押してください。";
 }

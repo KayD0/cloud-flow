@@ -1,49 +1,46 @@
 import { describe, expect, it } from "vitest";
-import {
-  initialWeightedRoutingState,
-  weightedRoutingReducer,
-  type WeightedRoutingState,
-} from "./weighted-routing-scenario";
+import { ALLOCATION_TOLERANCE, evaluateRoute, initialWeightedRoutingState, weightedRoutingReducer } from "./weighted-routing-scenario";
 
-function runToCompletion(state: WeightedRoutingState) {
-  let current = weightedRoutingReducer(state, { type: "start" });
-  for (let tick = 0; tick < 500 && current.playback !== "completed"; tick += 1) {
-    current = weightedRoutingReducer(current, { type: "tick" });
-  }
-  return current;
-}
-
-describe("weightedRoutingReducer", () => {
-  it("重み80:20で20件をStable 16件、Canary 4件へ配送する", () => {
-    const state = runToCompletion({ ...initialWeightedRoutingState, weights: { stable: 80, canary: 20 } });
-    expect(state.playback).toBe("completed");
-    expect(state.completed).toEqual({ stable: 16, canary: 4 });
+describe("カナリア・コントロール", () => {
+  it("目標配分と安全条件を同時に満たすと勝利する", () => {
+    const result = evaluateRoute(20);
+    expect(result.outcome).toBe("won");
+    expect(result.delivered).toEqual({ stable: 16, canary: 4, failed: 0 });
+    expect(result.score.total).toBe(100);
   });
 
-  it("Canaryの重みが0なら全件をStableへ配送する", () => {
-    const state = runToCompletion({ ...initialWeightedRoutingState, weights: { stable: 100, canary: 0 }, requestCount: 7 });
-    expect(state.completed).toEqual({ stable: 7, canary: 0 });
+  it("Canary 配分が大きすぎると障害率上限を超えて失敗する", () => {
+    const result = evaluateRoute(50);
+    expect(result.outcome).toBe("failed");
+    expect(result.canaryFailureRate).toBeGreaterThan(15);
+    expect(result.reason).toContain("安全上限");
   });
 
-  it("両方の重みが0なら開始しない", () => {
-    const state = { ...initialWeightedRoutingState, weights: { stable: 0, canary: 0 } };
-    expect(weightedRoutingReducer(state, { type: "start" })).toBe(state);
+  it("配分誤差が大きすぎると安全でも失敗する", () => {
+    const result = evaluateRoute(0);
+    expect(result.outcome).toBe("failed");
+    expect(result.canaryFailureRate).toBeLessThanOrEqual(15);
+    expect(result.allocationError).toBeGreaterThan(ALLOCATION_TOLERANCE);
   });
 
-  it("実行中に両方の重みが0になると配送を一時停止する", () => {
-    const running = { ...initialWeightedRoutingState, playback: "running" as const, weights: { stable: 10, canary: 0 } };
-    const state = weightedRoutingReducer(running, { type: "set-weight", destination: "stable", weight: 0 });
-    expect(state.playback).toBe("paused");
-    expect(state.weights).toEqual({ stable: 0, canary: 0 });
+  it("許容境界の25%は勝利し、26%は失敗する", () => {
+    expect(evaluateRoute(25).outcome).toBe("won");
+    expect(evaluateRoute(26).outcome).toBe("failed");
   });
 
-  it("Pause中のtickでは状態を変更しない", () => {
-    const paused = { ...initialWeightedRoutingState, playback: "paused" as const };
-    expect(weightedRoutingReducer(paused, { type: "tick" })).toBe(paused);
+  it("Pause 中は進まず、再開後に固定件数で結果を確定する", () => {
+    let state = weightedRoutingReducer(initialWeightedRoutingState, { type: "start" });
+    state = weightedRoutingReducer(state, { type: "tick" });
+    state = weightedRoutingReducer(state, { type: "pause" });
+    expect(weightedRoutingReducer(state, { type: "tick" })).toBe(state);
+    state = weightedRoutingReducer(state, { type: "start" });
+    for (let i = 0; i < 20; i += 1) state = weightedRoutingReducer(state, { type: "tick" });
+    expect(state.phase).toBe("failed");
+    expect(state.result).not.toBeNull();
   });
 
-  it("Resetで重み、Request数、進捗を合成した初期状態へ戻す", () => {
-    const changed = runToCompletion({ ...initialWeightedRoutingState, weights: { stable: 50, canary: 50 }, requestCount: 4 });
+  it("Reset でモードを含む同じ合成初期状態へ戻る", () => {
+    const changed = { ...initialWeightedRoutingState, mode: "challenge" as const, canaryWeight: 80, dispatched: 12 };
     expect(weightedRoutingReducer(changed, { type: "reset" })).toEqual(initialWeightedRoutingState);
   });
 });

@@ -2,124 +2,90 @@
 
 import { useEffect, useReducer } from "react";
 import {
-  FLOW_STAGES,
-  delayMilliseconds,
-  getCurrentStage,
+  ROUTES,
+  calculateScore,
+  getResultExplanation,
   initialRequestResponseFlowState,
   requestResponseFlowReducer,
 } from "@/lib/scenarios/traffic-routing/request-response-flow/request-response-flow-scenario";
 import styles from "./request-response-flow-demo.module.css";
 import { useTemplateLoop } from "@/components/templates/use-template-loop";
 
-const TOKEN_POSITIONS = [100, 450, 800, 450, 100] as const;
-const PLAYBACK_LABELS = {
-  idle: "READY", running: "RUNNING", paused: "PAUSED", completed: "COMPLETED", failed: "FAILED",
-} as const;
+const STATUS_LABEL = { briefing: "開始前", playing: "配送中", paused: "一時停止", won: "往復完了", failed: "配送失敗" } as const;
 
 export function RequestResponseFlowDemo() {
-  const [state, dispatch] = useReducer(requestResponseFlowReducer, initialRequestResponseFlowState, (initial) => requestResponseFlowReducer(initial, { type: "start" }));
-  const stage = getCurrentStage(state);
-  const terminal = state.playback === "completed" || state.playback === "failed";
+  const [state, dispatch] = useReducer(requestResponseFlowReducer, initialRequestResponseFlowState);
+  const terminal = state.status === "won" || state.status === "failed";
 
   useEffect(() => {
-    if (state.playback !== "running") return;
-    const timer = window.setTimeout(
-      () => dispatch({ type: "tick" }),
-      delayMilliseconds[state.delayMode],
-    );
-    return () => window.clearTimeout(timer);
-  }, [state.playback, state.stageIndex, state.delayMode]);
+    if (state.status !== "playing") return;
+    const timer = window.setInterval(() => dispatch({ type: "tick" }), 1000);
+    return () => window.clearInterval(timer);
+  }, [state.status]);
 
-  const explanation = state.playback === "failed"
-    ? "Backend の説明用タイムアウトにより Response を生成できませんでした。Reset して再試行してください。"
-    : stage.detail;
+  const guidedHint = state.leg === "request"
+    ? "ヒント: GET /profile はデータを組み立てる動的処理です。各 Server の役割を比べましょう。"
+    : "ヒント: Response は、新しい宛先ではなく要求を送った相手へ返します。";
 
   useTemplateLoop(terminal, () => { dispatch({ type: "reset" }); dispatch({ type: "start" }); });
 
   return (
-    <section className={styles.demo} aria-labelledby="flow-demo-title">
-      <div className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>INTERACTIVE SCENARIO 01</p>
-          <h2 id="flow-demo-title">Request / Response Flow</h2>
-          <p className={styles.description}>Gateway が往路と復路を中継する、ベンダーニュートラルな合成シナリオです。</p>
-        </div>
-        <div className={`${styles.statusBadge} ${styles[state.playback]}`} aria-live="polite">
-          <span>CURRENT STATE</span><strong>{PLAYBACK_LABELS[state.playback]}</strong>
-        </div>
-      </div>
+    <section className={styles.game} aria-labelledby="relay-title">
+      <header className={styles.header}>
+        <div><p className={styles.eyebrow}>TRAFFIC &amp; ROUTING · MINI GAME</p><h2 id="relay-title">リクエスト・リレー</h2><p>通信オペレーターとして、要求と応答を正しい経路へ中継します。</p></div>
+        <div className={styles.status} role="status" aria-live="polite"><span>状態</span><strong>{STATUS_LABEL[state.status]}</strong></div>
+      </header>
 
-      <div className={styles.canvasWrap}>
-        <svg className={styles.canvas} viewBox="0 0 900 340" role="img" aria-labelledby="flow-title flow-desc">
-          <title id="flow-title">Client、Gateway、Backend 間の Request / Response Flow</title>
-          <desc id="flow-desc">Client から Gateway、Backend へ進む Request と、Gateway を経由して Client に戻る Response</desc>
-          <defs>
-            <marker id="request-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M0 0 L10 5 L0 10z" />
-            </marker>
-            <marker id="response-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M0 0 L10 5 L0 10z" />
-            </marker>
-          </defs>
-          <g className={styles.requestPath}>
-            <path d="M160 125 H390" /><path d="M510 125 H740" />
-            <text x="450" y="94" textAnchor="middle">REQUEST · OUTBOUND</text>
-          </g>
-          <g className={styles.responsePath}>
-            <path d="M740 215 H510" /><path d="M390 215 H160" />
-            <text x="450" y="246" textAnchor="middle">RESPONSE · RETURN</text>
-          </g>
-          <g className={styles.node} transform="translate(40 125)">
-            <rect width="120" height="90" rx="18" /><text x="60" y="38" textAnchor="middle">Client</text><text x="60" y="62" textAnchor="middle" className={styles.nodeState}>CALLER</text>
-          </g>
-          <g className={`${styles.node} ${styles.gateway}`} transform="translate(390 125)">
-            <path d="M60 0 L120 24 V66 L60 90 L0 66 V24z" /><text x="60" y="38" textAnchor="middle">Gateway</text><text x="60" y="62" textAnchor="middle" className={styles.nodeState}>ROUTER</text>
-          </g>
-          <g className={styles.node} transform="translate(740 125)">
-            <rect width="120" height="90" rx="18" /><text x="60" y="38" textAnchor="middle">Backend</text><text x="60" y="62" textAnchor="middle" className={styles.nodeState}>{state.playback === "failed" ? "TIMEOUT" : "SERVICE"}</text>
-          </g>
-          <g className={`${styles.token} ${state.stageIndex >= 3 ? styles.responseToken : styles.requestToken}`} transform={`translate(${TOKEN_POSITIONS[state.stageIndex]} ${state.stageIndex >= 3 ? 215 : 125})`} aria-hidden="true">
-            <circle r="13" /><text y="4" textAnchor="middle">{state.stageIndex >= 3 ? "R" : "Q"}</text>
-          </g>
-        </svg>
-      </div>
+      <section className={styles.briefing} aria-labelledby="mission-title">
+        <div><p className={styles.label}>YOUR ROLE</p><strong>通信オペレーター</strong></div>
+        <div><p className={styles.label} id="mission-title">MISSION</p><strong>要求を正しい Server へ送り、Response を Client へ戻す</strong></div>
+        <div><p className={styles.label}>WIN / LOSE</p><strong>60秒以内の往復で勝利 · 誤配送またはタイムアウトで失敗</strong></div>
+      </section>
 
-      <div className={styles.statePanel} aria-live="polite">
-        <div><span>STEP {state.stageIndex + 1} / {FLOW_STAGES.length}</span><strong>{state.playback === "failed" ? "Backend timeout" : stage.label}</strong></div>
-        <p>{explanation}</p>
-      </div>
-
-      <ol className={styles.timeline} aria-label="フローの状態遷移">
-        {FLOW_STAGES.map((item, index) => (
-          <li key={item.id} className={index === state.stageIndex ? styles.current : index < state.stageIndex ? styles.visited : ""} aria-current={index === state.stageIndex ? "step" : undefined}>
-            <span>{index + 1}</span><small>{item.label}</small>
-          </li>
-        ))}
-      </ol>
-
-      <div className={styles.controls} aria-label="シナリオ操作">
-        <div className={styles.transport}>
-          <button type="button" onClick={() => dispatch({ type: "start" })} disabled={state.playback === "running" || terminal}>▶ Start</button>
-          <button type="button" onClick={() => dispatch({ type: "pause" })} disabled={state.playback !== "running"}>Ⅱ Pause</button>
-          <button type="button" onClick={() => dispatch({ type: "step" })} disabled={terminal}>▷ Step</button>
-          <button type="button" onClick={() => dispatch({ type: "reset" })}>↺ Reset</button>
-        </div>
-        <fieldset>
-          <legend>説明用の遅延</legend>
-          <label><input type="radio" name="delay" checked={state.delayMode === "normal"} onChange={() => dispatch({ type: "set-delay", delayMode: "normal" })} /> Normal <small>900 ms</small></label>
-          <label><input type="radio" name="delay" checked={state.delayMode === "slow"} onChange={() => dispatch({ type: "set-delay", delayMode: "slow" })} /> Slow <small>1,800 ms</small></label>
+      <div className={styles.modeRow}>
+        <fieldset disabled={state.status !== "briefing"}><legend>モード</legend>
+          <label><input type="radio" name="mode" checked={state.mode === "guided"} onChange={() => dispatch({ type: "set-mode", mode: "guided" })} /> Guided <small>ヒント付き</small></label>
+          <label><input type="radio" name="mode" checked={state.mode === "challenge"} onChange={() => dispatch({ type: "set-mode", mode: "challenge" })} /> Challenge <small>正確性 70% + 残り時間 30%</small></label>
         </fieldset>
+        <div className={styles.timer}><span>TIME LEFT</span><strong>{state.timeRemaining}</strong><small>秒</small></div>
       </div>
 
-      <div className={styles.boundaryCase}>
-        <div><p>BOUNDARY CASE</p><strong>Backend timeout</strong><span>Backend 処理時に合成した失敗状態で停止します。</span></div>
-        <label><input type="checkbox" checked={state.backendTimeout} onChange={(event) => dispatch({ type: "set-backend-timeout", enabled: event.target.checked })} disabled={terminal} /> タイムアウトを有効化</label>
+      <section className={styles.board} aria-label="配送ボード">
+        <div className={styles.packet}>
+          <p className={styles.label}>{state.leg === "request" ? "REQUEST CARD" : "RESPONSE CARD"}</p>
+          <strong>{state.leg === "request" ? "GET /profile" : "200 OK · PROFILE DATA"}</strong>
+          <span>{state.leg === "request" ? "要求元: Client A · 種類: 動的データ" : "返却先: 要求元 · 相関ID: R-001"}</span>
+        </div>
+        <div className={styles.flow} aria-label={`現在の目標: ${state.leg === "request" ? "Request を Server へ送る" : "Response を Client へ戻す"}`}>
+          <span className={state.leg === "request" ? styles.activeStep : ""}>① REQUEST</span><i aria-hidden="true">→</i><span>SERVER</span><i aria-hidden="true">⇢</i><span className={state.leg === "response" ? styles.activeStep : ""}>② RESPONSE → CLIENT</span>
+        </div>
+        <fieldset className={styles.routes} disabled={state.status !== "playing"}><legend>{state.leg === "request" ? "Request の配送先" : "Response の返却先"}を選択</legend>
+          {ROUTES.map((route) => <label key={route.id} className={state.selectedRoute === route.id ? styles.selected : ""}>
+            <input type="radio" name="route" checked={state.selectedRoute === route.id} onChange={() => dispatch({ type: "select-route", route: route.id })} />
+            <span className={styles.routeIcon} aria-hidden="true">{route.shape === "circle" ? "●" : route.shape === "hexagon" ? "⬡" : route.shape === "diamond" ? "◆" : "■"}</span>
+            <strong>{route.label}</strong><small>{route.hint}</small>
+          </label>)}
+        </fieldset>
+        {state.mode === "guided" && !terminal && <p className={styles.hint}><strong>GUIDED</strong> {guidedHint}</p>}
+      </section>
+
+      <div className={styles.controls} aria-label="ゲーム操作">
+        {state.status === "briefing" && <button className={styles.primary} onClick={() => dispatch({ type: "start" })}>Start</button>}
+        {state.status === "playing" && <><button onClick={() => dispatch({ type: "pause" })}>Pause</button><button className={styles.primary} disabled={!state.selectedRoute} onClick={() => dispatch({ type: "send" })}>選択した経路へ送信</button></>}
+        {state.status === "paused" && <button className={styles.primary} onClick={() => dispatch({ type: "resume" })}>再開</button>}
+        <button onClick={() => dispatch({ type: "reset" })}>Reset</button>
       </div>
 
-      <aside className={styles.learningNote} aria-label="カテゴリとシナリオの説明">
-        <div><strong>Why Traffic &amp; Routing?</strong><p>主題は処理内容ではなく、Request と Response が Gateway を経由してどの経路を移動するかだからです。</p></div>
-        <div><strong>Safe learning environment</strong><p>表示値と遅延はすべて説明用です。実クラウド、実サービス、実運用データへ接続せず、性能や可用性を保証しません。</p></div>
-      </aside>
+      <div className={styles.feedback} aria-live="polite"><p className={styles.label}>WHY / FEEDBACK</p><strong>{state.feedback}</strong>{terminal && <p>{getResultExplanation(state)}</p>}</div>
+
+      {terminal && <section className={state.status === "won" ? styles.resultWin : styles.resultFail} aria-labelledby="result-title">
+        <p className={styles.label}>ROUND RESULT</p><h3 id="result-title">{state.status === "won" ? "往復通信 成功" : "往復通信 失敗"}</h3>
+        {state.mode === "challenge" && <p className={styles.score}>SCORE <strong>{calculateScore(state)}</strong> / 1000 <span>正確性 {state.decisions ? Math.round(state.correctDecisions / state.decisions * 100) : 0}% · 残り {state.timeRemaining}秒</span></p>}
+        <button onClick={() => dispatch({ type: "reset" })}>同じシナリオに再挑戦</button>
+      </section>}
+
+      <details className={styles.boundary}><summary>境界ケース: API Server 利用不能</summary><p>正しい経路でも Server が利用不能なら往復は完了しません。</p><label><input type="checkbox" checked={state.serverUnavailable} disabled={state.status !== "briefing"} onChange={(event) => dispatch({ type: "set-server-unavailable", enabled: event.target.checked })} /> 固定シナリオで API Server を利用不能にする</label></details>
+      <footer className={styles.disclaimer}>このゲームはベンダーニュートラルな合成データだけを使用し、実環境へ接続・操作しません。時間とスコアは学習用で、性能・可用性・安全性を保証しません。</footer>
     </section>
   );
 }

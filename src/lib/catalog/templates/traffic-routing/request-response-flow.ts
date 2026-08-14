@@ -2,15 +2,15 @@ import type { DesignTemplate } from "../../model";
 
 const template = {
   slug: "request-response-flow",
-  name: "Request / Response Flow",
-  summary: "Client から Backend へ届く Request と、Client へ戻る Response の往復を段階的に追跡します。",
+  name: "リクエスト・リレー",
+  summary: "通信オペレーターとして経路を判断し、Request を正しい Server へ、Response を要求元の Client へ届ける学習ミニゲームです。",
   primaryCategory: "traffic-routing",
   tags: ["Request / Response Flow", "Traffic & Routing", "Vendor neutral"],
-  concepts: ["Request / Response Flow", "Gateway routing", "Round trip"],
+  concepts: ["Request / Response Flow", "Server routing", "Round trip"],
   difficulty: "Beginner",
   status: "available",
-  motions: ["Request transit", "Backend processing", "Response transit", "State transition"],
-  actions: ["Play", "Pause", "Reset"],
+  motions: ["Request transit", "Server processing", "Response transit", "Result feedback"],
+  actions: ["Select route", "Send", "Pause", "Reset"],
   href: "/templates/traffic-routing/request-response-flow",
 } as const satisfies DesignTemplate;
 

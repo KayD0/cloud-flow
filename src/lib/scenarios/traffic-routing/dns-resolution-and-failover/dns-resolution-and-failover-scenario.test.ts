@@ -1,52 +1,73 @@
 import { describe, expect, it } from "vitest";
-import { dnsScenarioReducer, initialDnsScenarioState, type DnsScenarioState } from "./dns-resolution-and-failover-scenario";
+import {
+  DNS_TTL_SECONDS,
+  MAX_FAILED_CONNECTIONS,
+  dnsScenarioReducer,
+  getChallengeScore,
+  getGuidedNextAction,
+  initialDnsScenarioState,
+  type DnsScenarioAction,
+  type DnsScenarioState,
+} from "./dns-resolution-and-failover-scenario";
 
-function runQuery(state: DnsScenarioState) {
-  let next = dnsScenarioReducer(state, { type: "start" });
-  for (let step = 0; step < 4; step += 1) next = dnsScenarioReducer(next, { type: "tick" });
-  return next;
+function run(actions: DnsScenarioAction[], state = initialDnsScenarioState) {
+  return actions.reduce<DnsScenarioState>(dnsScenarioReducer, state);
 }
 
-describe("dnsScenarioReducer", () => {
-  it("正常時はキャッシュされた Primary へ到達する", () => {
-    const state = runQuery(initialDnsScenarioState);
-    expect(state.phase).toBe("primary-success");
-    expect(state.cachedRecord).toBe("primary");
-    expect(state.completedQueries).toBe(1);
+const start: DnsScenarioAction = { type: "start", mode: "challenge" };
+
+describe("DNSレスキュー", () => {
+  it("正常な Primary へ接続できる", () => {
+    const state = run([start, { type: "connect" }]);
+    expect(state.feedback.title).toContain("通常通信に成功");
+    expect(state.outcome).toBe("playing");
   });
 
-  it("Primary 障害後も TTL が残る間は古い Primary を参照する", () => {
-    const state = dnsScenarioReducer(initialDnsScenarioState, { type: "fail-primary" });
-    expect(state.phase).toBe("stale-cache-failure");
-    expect(state.cachedRecord).toBe("primary");
-    expect(state.ttlRemaining).toBeGreaterThan(0);
-  });
-
-  it("レコード変更だけでは Resolver の既存キャッシュを書き換えない", () => {
-    const state = dnsScenarioReducer(initialDnsScenarioState, { type: "switch-record" });
-    expect(state.authoritativeRecord).toBe("secondary");
-    expect(state.cachedRecord).toBe("primary");
-  });
-
-  it("TTL 満了後の再問い合わせで Secondary へ切り替える", () => {
-    const failed = dnsScenarioReducer(initialDnsScenarioState, { type: "fail-primary" });
-    const switched = dnsScenarioReducer(failed, { type: "switch-record" });
-    const expired = dnsScenarioReducer(switched, { type: "expire-ttl" });
-    const state = runQuery(expired);
-    expect(state.phase).toBe("secondary-success");
+  it("Failover と TTL 満了後の再解決で Secondary へ復旧する", () => {
+    const state = run([
+      start,
+      { type: "inject-failure" },
+      { type: "failover" },
+      { type: "advance-ttl" },
+      { type: "advance-ttl" },
+      { type: "advance-ttl" },
+      { type: "connect" },
+    ]);
+    expect(state.outcome).toBe("won");
     expect(state.cachedRecord).toBe("secondary");
+    expect(state.ttlRemaining).toBe(DNS_TTL_SECONDS);
+    expect(getChallengeScore(state).total).toBeGreaterThanOrEqual(80);
   });
 
-  it("TTL 満了だけでは障害中の Primary レコードから切り替わらない", () => {
-    const failed = dnsScenarioReducer(initialDnsScenarioState, { type: "fail-primary" });
-    const expired = dnsScenarioReducer(failed, { type: "expire-ttl" });
-    expect(runQuery(expired).phase).toBe("stale-cache-failure");
+  it("権威レコードだけ切り替えても TTL 中は古い Primary への接続に失敗する", () => {
+    const state = run([start, { type: "inject-failure" }, { type: "failover" }, { type: "connect" }]);
+    expect(state.outcome).toBe("playing");
+    expect(state.failedConnections).toBe(1);
+    expect(state.feedback.detail).toContain("TTL");
   });
 
-  it("Pause 中の tick は状態を変更せず、Reset は合成した初期状態へ戻す", () => {
-    const paused = { ...initialDnsScenarioState, playback: "paused" as const };
-    expect(dnsScenarioReducer(paused, { type: "tick" })).toBe(paused);
-    const changed = dnsScenarioReducer(initialDnsScenarioState, { type: "fail-primary" });
-    expect(dnsScenarioReducer(changed, { type: "reset" })).toEqual(initialDnsScenarioState);
+  it("到達不能 Endpoint を選び続けると失敗する", () => {
+    const attempts = Array.from({ length: MAX_FAILED_CONNECTIONS }, () => ({ type: "connect" as const }));
+    const state = run([start, { type: "inject-failure" }, ...attempts]);
+    expect(state.outcome).toBe("lost");
+    expect(state.playback).toBe("paused");
+    expect(getChallengeScore(state).accuracy).toBe(0);
+  });
+
+  it("TTL は 0 未満にならず、空キャッシュの進行は無視する", () => {
+    const expired = run([start, { type: "advance-ttl" }, { type: "advance-ttl" }, { type: "advance-ttl" }]);
+    const unchanged = dnsScenarioReducer(expired, { type: "advance-ttl" });
+    expect(expired.ttlRemaining).toBe(0);
+    expect(unchanged).toBe(expired);
+  });
+
+  it("Guided の次操作を因果順に提示し、Reset は固定初期状態へ戻す", () => {
+    let state = dnsScenarioReducer(initialDnsScenarioState, { type: "start", mode: "guided" });
+    expect(getGuidedNextAction(state)).toBe("inject-failure");
+    state = dnsScenarioReducer(state, { type: "inject-failure" });
+    expect(getGuidedNextAction(state)).toBe("failover");
+    state = dnsScenarioReducer(state, { type: "failover" });
+    expect(getGuidedNextAction(state)).toBe("advance-ttl");
+    expect(dnsScenarioReducer(state, { type: "reset" })).toEqual(initialDnsScenarioState);
   });
 });
