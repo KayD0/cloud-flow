@@ -9,7 +9,6 @@ describe("template catalog", () => {
   it("places available categories before planned categories", () => {
     const categories = getCatalogCategories();
     const firstPlannedIndex = categories.findIndex((category) => !category.isAvailable);
-
     expect(firstPlannedIndex).toBeGreaterThan(0);
     expect(categories.slice(0, firstPlannedIndex).every((category) => category.isAvailable)).toBe(true);
     expect(categories.slice(firstPlannedIndex).every((category) => !category.isAvailable)).toBe(true);
