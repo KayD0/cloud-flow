@@ -8,6 +8,7 @@ export function SiteHeader() {
       </Link>
       <nav aria-label="メインナビゲーション">
         <Link href="/#catalog">Catalog</Link>
+        <Link href="/node-actions">Node Action</Link>
         <a href="https://github.com/KayD0/cloud-flow">GitHub ↗</a>
       </nav>
     </header>

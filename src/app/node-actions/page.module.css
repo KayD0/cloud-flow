@@ -1,0 +1,36 @@
+.shell { padding-bottom: 7rem; }
+.hero { display: grid; grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr); align-items: center; gap: clamp(3rem, 7vw, 7rem); min-height: calc(100vh - 70px); padding: clamp(4rem, 8vw, 7rem) 0; }
+.heroCopy h1 { margin: 1.4rem 0 1.8rem; font-size: clamp(3.6rem, 7vw, 6.8rem); line-height: .92; letter-spacing: -.065em; }
+.heroCopy h1 em { color: transparent; font-style: normal; -webkit-text-stroke: 1px #66758b; }
+.heroCopy > p:not(:first-child) { max-width: 610px; color: #a5b2c4; font-size: 1.02rem; line-height: 1.9; }
+.playground { position: relative; min-height: 560px; overflow: hidden; border: 1px solid #2b3b50; border-radius: 22px; background: #0a101a; box-shadow: 0 28px 80px #0008; }
+.grid { position: absolute; inset: 0; opacity: .38; background-image: linear-gradient(#253348 1px, transparent 1px), linear-gradient(90deg, #253348 1px, transparent 1px); background-size: 40px 40px; mask-image: linear-gradient(to bottom, #000, transparent 96%); }
+.node { position: absolute; z-index: 2; display: grid; justify-items: center; gap: .65rem; color: #aab7c8; font: 700 .62rem var(--font-geist-mono); letter-spacing: .12em; }
+.nodeIcon, .targetRing { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 20px; }
+.actor { left: 11%; top: 23%; color: var(--accent); }
+.actor .nodeIcon { border: 1px solid #65e7b4; background: #102a22; box-shadow: 0 0 0 8px #69e7b310, 0 12px 34px #0008; font-size: 1.4rem; }
+.collectible { left: 49%; top: 16%; color: #f5c96a; }
+.diamond { width: 44px; height: 44px; margin: 16px; border: 1px solid #f5c96a; background: #352b15; transform: rotate(45deg); box-shadow: 0 0 25px #f5c96a36; }
+.target { right: 10%; bottom: 17%; color: #78aaff; }
+.targetRing { border: 2px dashed #78aaff; border-radius: 50%; background: #101c31; box-shadow: inset 0 0 0 12px #0a101a; }
+.obstacle { position: absolute; z-index: 1; left: 39%; bottom: 14%; width: 92px; height: 184px; border: 1px solid #4a586c; background: repeating-linear-gradient(135deg, #171f2b 0 12px, #111925 12px 24px); }
+.obstacle span { position: absolute; right: -31px; bottom: 72px; color: #69798f; font: 650 .55rem var(--font-geist-mono); letter-spacing: .12em; transform: rotate(-90deg); }
+.path { position: absolute; left: 19%; top: 37%; width: 60%; height: 42%; border-top: 1px dashed #426358; border-right: 1px dashed #426358; border-radius: 0 80px 0 0; transform: rotate(8deg); transform-origin: left top; }
+.hint { position: absolute; left: 1.5rem; bottom: 1rem; color: #607188; font: 650 .58rem var(--font-geist-mono); letter-spacing: .15em; }
+.hint span { color: var(--accent); }
+.actions { padding: 3rem 0 8rem; }
+.actionGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 0; padding: 1px; list-style: none; background: var(--border); }
+.actionCard { min-height: 370px; padding: clamp(1.5rem, 3vw, 2.2rem); background: var(--surface); }
+.cardTopline { display: flex; justify-content: space-between; color: #66758a; font: 650 .64rem var(--font-geist-mono); }
+.planned { color: #91a0b4; }
+.cardLabel { margin: 4rem 0 .7rem; color: var(--accent); font: 700 .65rem var(--font-geist-mono); letter-spacing: .14em; }
+.actionCard h3 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.035em; }
+.cardDescription { min-height: 82px; color: var(--muted); line-height: 1.7; }
+.foundation { display: grid; grid-template-columns: 120px 1fr auto; align-items: end; gap: 2rem; padding: clamp(2rem, 5vw, 4rem); border: 1px solid #315542; border-radius: 20px; background: linear-gradient(135deg, #10231d, #0b121b 64%); }
+.foundationIndex { align-self: start; margin: 0; color: var(--accent); font: 700 .65rem var(--font-geist-mono); letter-spacing: .14em; }
+.foundation .cardLabel { margin: 0 0 .75rem; }
+.foundation h2 { margin: 0; font-size: clamp(2rem, 5vw, 3.8rem); letter-spacing: -.05em; }
+.foundation div > p:last-child { max-width: 680px; margin: 1.2rem 0 0; color: #a3b0c0; line-height: 1.8; }
+.issueLink { padding-bottom: .4rem; border-bottom: 1px solid var(--accent); color: var(--accent); font: 700 .68rem var(--font-geist-mono); letter-spacing: .1em; white-space: nowrap; }
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; } .playground { min-height: 480px; } .actionGrid { grid-template-columns: 1fr; } .actionCard { min-height: 0; } .cardDescription { min-height: 0; } .foundation { grid-template-columns: 1fr; align-items: start; } }
+@media (max-width: 760px) { .hero { min-height: auto; padding-top: 4rem; } .playground { min-height: 410px; } .nodeIcon, .targetRing { width: 62px; height: 62px; } .collectible { left: 58%; } .diamond { width: 36px; height: 36px; margin: 13px; } .obstacle { left: 41%; width: 72px; height: 132px; } .cardLabel { margin-top: 2.7rem; } }
