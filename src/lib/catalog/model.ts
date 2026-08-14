@@ -15,7 +15,14 @@ export type TemplateDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 export type TemplateStatus = "available" | "planned";
 
-export type TemplateAction = "Play" | "Pause" | "Reset" | "Adjust traffic" | "Inject failure";
+export type TemplateAction =
+  | "Play"
+  | "Start"
+  | "Pause"
+  | "Reset"
+  | "Deal request"
+  | "Adjust traffic"
+  | "Inject failure";
 
 export interface TemplateCategory {
   slug: CategorySlug;
