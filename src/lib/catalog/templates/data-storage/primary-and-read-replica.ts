@@ -3,13 +3,13 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "primary-and-read-replica",
   name: "Primary and Read Replica",
-  summary: "PrimaryへのWrite、Replicaへの複製、Readの分散をたどります。",
+  summary: "Primary への Write、Read Replica への複製、Read の分散と複製遅延による差をたどります。",
   primaryCategory: "data-storage",
-  tags: ["Primary and Read Replica", "data-storage"],
-  concepts: ["Primary and Read Replica"],
+  tags: ["Read Replica", "Replication", "Data & Storage"],
+  concepts: ["Primary", "Read Replica", "Synchronous and asynchronous replication", "Replication lag"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
+  status: "available",
+  motions: ["Data flow", "State transition"],
   actions: ["Play", "Pause", "Reset"],
   href: "/templates/data-storage/primary-and-read-replica",
 } as const satisfies DesignTemplate;

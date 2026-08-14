@@ -3,14 +3,14 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "active-standby-multi-az-failover",
   name: "Active / Standby Multi-AZ Failover",
-  summary: "Active障害からStandbyへの切り替えと復旧確認を示します。",
+  summary: "Active 障害の検知から別 AZ の Standby 昇格、復旧確認までの判断と状態遷移を追跡します。",
   primaryCategory: "reliability-recovery",
-  tags: ["Active / Standby Multi-AZ Failover", "reliability-recovery"],
-  concepts: ["Active / Standby Multi-AZ Failover"],
+  tags: ["Multi-AZ", "Failover", "Recovery"],
+  concepts: ["Active / Standby", "Failure detection", "Standby promotion", "Recovery confirmation"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
-  actions: ["Play", "Pause", "Reset"],
+  status: "available",
+  motions: ["Health state transition", "Standby promotion", "Traffic path switch"],
+  actions: ["Play", "Pause", "Reset", "Inject failure"],
   href: "/templates/reliability-recovery/active-standby-multi-az-failover",
 } as const satisfies DesignTemplate;
 

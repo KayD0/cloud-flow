@@ -1,0 +1,35 @@
+.demo { overflow: hidden; border: 1px solid #263348; border-radius: 24px; background: #0b111d; box-shadow: 0 28px 80px #02050b80; }
+.header { display: flex; justify-content: space-between; gap: 2rem; padding: 2rem 2.25rem 1.4rem; border-bottom: 1px solid #263348; }
+.header h2 { margin: .25rem 0 .55rem; font-size: clamp(1.45rem, 3vw, 2.1rem); letter-spacing: -.03em; }
+.eyebrow, .boundaryCase p { color: #9b8cff; font: 700 .7rem/1.2 var(--font-mono); letter-spacing: .16em; }
+.description { max-width: 680px; color: #98a8be; line-height: 1.75; }
+.statusBadge { min-width: 132px; align-self: center; padding: .8rem 1rem; border: 1px solid #34445c; border-radius: 14px; background: #101a2b; }
+.statusBadge span { display: block; color: #718198; font: 600 .62rem var(--font-mono); letter-spacing: .12em; }
+.statusBadge strong { color: #69e7b3; font: 600 1rem/2 var(--font-mono); }
+.paused strong { color: #ffd479; }
+.canvasWrap { padding: 2rem; background-image: linear-gradient(#1c293b55 1px, transparent 1px), linear-gradient(90deg, #1c293b55 1px, transparent 1px); background-size: 28px 28px; }
+.canvas { display: grid; grid-template-columns: minmax(130px, 1fr) auto minmax(260px, 1.5fr) minmax(130px, 1fr); gap: 1.25rem; align-items: center; max-width: 900px; min-height: 260px; margin: auto; }
+.imageBox, .workBox { display: grid; gap: .35rem; padding: 1rem; border: 1px dashed #50617a; border-radius: 12px; background: #101a2b; }
+.imageBox span, .workBox span, .container small { color: #718198; font: 700 .62rem var(--font-mono); letter-spacing: .12em; }
+.imageBox strong, .workBox strong { color: #dce6f3; font-size: .82rem; }.imageBox small, .workBox small { color: #718198; }
+.arrow { display: grid; justify-items: center; color: #9b8cff; font: 700 1.5rem var(--font-mono); }.arrow span { color: #718198; font-size: .58rem; letter-spacing: .1em; }
+.container { overflow: hidden; border: 2px solid #52637d; border-radius: 18px; background: #121d2e; box-shadow: 0 12px 34px #0008; }
+.containerTop { display: flex; gap: .6rem; padding: .8rem 1rem; border-bottom: 1px solid #34445c; color: #cdd9e8; font-size: .82rem; }
+.containerBody { display: flex; align-items: center; gap: 1rem; padding: 1.6rem; }.containerBody > div { display: grid; gap: .25rem; }.containerBody strong { color: #fff; font: 700 1.25rem var(--font-mono); }
+.stateShape { width: 34px; height: 34px; border: 3px solid #91a1b8; border-radius: 50%; background: #1a283c; }
+.starting, .restarting { border-style: dashed; border-color: #ffd479; }.starting .stateShape, .restarting .stateShape { border-radius: 7px; border-color: #ffd479; transform: rotate(45deg); }
+.ready { border-color: #69e7b3; }.ready .stateShape { border-color: #69e7b3; background: #184333; }
+.processing { border-color: #70b7ff; }.processing .stateShape { border-radius: 3px; border-color: #70b7ff; background: #183451; }
+.stopped { border-color: #ff8293; }.stopped .stateShape { border-radius: 3px; border-color: #ff8293; background: #4a2029; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #34445c; }.metrics span { padding: .7rem 1rem; color: #8495ac; font-size: .7rem; }.metrics span + span { border-left: 1px solid #34445c; }.metrics b { float: right; color: #dce6f3; }
+.statePanel { display: grid; grid-template-columns: 210px 1fr; gap: 1.5rem; align-items: center; min-height: 88px; padding: 1rem 2.25rem; border-top: 1px solid #263348; border-bottom: 1px solid #263348; background: #101a2b; }
+.statePanel span { display: block; color: #718198; font: 700 .65rem var(--font-mono); letter-spacing: .12em; }.statePanel strong { color: #e5edf8; }.statePanel p { color: #a9b7ca; line-height: 1.6; }
+.timeline { display: grid; grid-template-columns: repeat(6, 1fr); margin: 0; padding: 1.2rem 2.25rem; list-style: none; background: #0e1726; }
+.timeline li { position: relative; display: grid; justify-items: center; gap: .5rem; color: #718198; text-align: center; }.timeline li:not(:last-child)::after { position: absolute; top: 13px; left: calc(50% + 18px); width: calc(100% - 36px); border-top: 2px dotted #34445c; content: ""; }
+.timeline span { display: grid; z-index: 1; width: 28px; height: 28px; place-items: center; border: 2px solid #40516b; border-radius: 50%; background: #0e1726; font: 700 .7rem var(--font-mono); }.timeline small { font: 650 .68rem var(--font-sans); }.timeline .visited span { border-color: #9b8cff; color: #b7adff; }.timeline .current span { border-radius: 7px; border-color: #fff; color: #fff; }.timeline .current small { color: #fff; }
+.controls { display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; align-items: center; padding: 1.25rem 2.25rem; border-top: 1px solid #263348; background: #0e1726; }.transport, .operations { display: flex; flex-wrap: wrap; gap: .55rem; }.operations { justify-content: flex-end; }
+.controls button { min-height: 40px; padding: 0 .9rem; border: 1px solid #34445c; border-radius: 9px; background: #131f31; color: #cbd7e7; font: 650 .78rem var(--font-sans); cursor: pointer; }.transport button:first-child { border-color: #3cb989; color: #74eabd; }.operations button:nth-child(2) { border-color: #5d7fc1; color: #9fc7ff; }.controls button:disabled { cursor: not-allowed; opacity: .38; }.controls button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.boundaryCase { display: flex; align-items: center; gap: 1rem; padding: 1rem 2.25rem; border-top: 1px solid #3e2730; background: #1c131b; }.boundaryCase > div { display: grid; margin-right: auto; }.boundaryCase p { margin: 0; color: #ff8293; }.boundaryCase strong { color: #ffd5da; }.boundaryCase span { color: #a98e96; font-size: .78rem; }.boundaryCase output { padding: .55rem .75rem; border: 1px solid #68404b; border-radius: 8px; color: #ff9aa8; font: 700 .72rem var(--font-mono); }
+.learningNote { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.25rem 2.25rem 1.6rem; border-top: 1px solid #263348; }.learningNote div { padding: 1rem; border: 1px solid #263348; border-radius: 12px; background: #0e1726; }.learningNote strong { color: #dbe6f4; }.learningNote p { margin: .45rem 0 0; color: #8fa0b7; font-size: .82rem; line-height: 1.65; }
+@media (max-width: 760px) { .header { padding: 1.4rem; }.statusBadge { display: none; }.canvasWrap { overflow-x: auto; padding: 1rem; }.canvas { width: 720px; }.statePanel, .controls, .learningNote { grid-template-columns: 1fr; padding: 1.2rem; }.operations { justify-content: flex-start; }.timeline { overflow-x: auto; min-width: 680px; padding-inline: 1.2rem; }.boundaryCase { align-items: flex-start; flex-direction: column; padding: 1.2rem; } }
+@media (prefers-reduced-motion: reduce) { .stateShape { transition: none; } }

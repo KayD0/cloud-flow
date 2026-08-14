@@ -8,8 +8,8 @@ const template = {
   tags: ["Cache HIT / MISS", "data-storage"],
   concepts: ["Cache HIT / MISS"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
+  status: "available",
+  motions: ["Request flow", "State transition", "Cache update"],
   actions: ["Play", "Pause", "Reset"],
   href: "/templates/data-storage/cache-hit-miss",
 } as const satisfies DesignTemplate;

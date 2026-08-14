@@ -26,6 +26,7 @@ export function WeightedRoutingDemo() {
     return () => window.clearInterval(timer);
   }, [state.phase]);
 
+
   return (
     <section className={styles.game} aria-labelledby="canary-control-title">
       <header className={styles.header}>

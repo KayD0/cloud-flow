@@ -1,0 +1,45 @@
+.demo { overflow: hidden; border: 1px solid #29364a; border-radius: 24px; background: #09101a; box-shadow: 0 28px 80px #02050b80; }
+.header { display: flex; justify-content: space-between; gap: 2rem; padding: 2rem 2.25rem 1.4rem; border-bottom: 1px solid #29364a; }
+.header h2 { margin: .25rem 0 .5rem; font-size: clamp(1.45rem, 3vw, 2.15rem); letter-spacing: -.03em; }
+.header p:not(.eyebrow) { color: #91a2b8; }
+.eyebrow { color: #8be0ff; font: 700 .68rem var(--font-mono); letter-spacing: .16em; }
+.currentState { min-width: 170px; padding: .75rem 1rem; border: 1px solid #3f536e; border-radius: 14px; background: #111c2c; }
+.currentState span, .currentState small { display: block; color: #8091a8; font: 700 .6rem var(--font-mono); letter-spacing: .12em; }
+.currentState strong { display: block; margin: .2rem 0; color: #78e2b4; font: 750 1.45rem var(--font-mono); }
+.currentState[data-state="open"] strong { color: #ff8092; } .currentState[data-state="half-open"] strong { color: #ffd36a; }
+.decision { display: flex; gap: .85rem; align-items: center; min-height: 78px; padding: .85rem 2.25rem; border-bottom: 1px solid #29364a; background: #0e1725; }
+.decision > span { display: grid; flex: 0 0 30px; height: 30px; place-items: center; border: 1px solid #75d9ff; border-radius: 50%; color: #8be0ff; font-weight: 800; }
+.decision strong { color: #dce7f5; font-size: .82rem; } .decision p { margin-top: .22rem; color: #91a3ba; font-size: .8rem; line-height: 1.5; }
+.stage { padding: 2rem 2.25rem 1.4rem; background-image: linear-gradient(#1d2a3b55 1px, transparent 1px), linear-gradient(90deg, #1d2a3b55 1px, transparent 1px); background-size: 28px 28px; }
+.flow { display: flex; align-items: stretch; justify-content: center; }
+.flowItem { display: flex; align-items: center; }
+.stateCard { width: 210px; min-height: 155px; padding: 1.1rem; border: 1px dashed #46566d; border-radius: 18px; background: #101a28; opacity: .62; }
+.stateCard[data-active="true"] { border: 2px solid #76dcb1; opacity: 1; box-shadow: 0 0 0 5px #55d9a414, 0 12px 40px #0006; }
+.stateCard[data-state="open"][data-active="true"] { border-color: #ff7186; } .stateCard[data-state="half-open"][data-active="true"] { border-color: #ffd36a; }
+.shape { display: block; width: 18px; height: 18px; margin-bottom: .65rem; border: 2px solid #80dcb8; border-radius: 50%; }
+.stateCard[data-state="open"] .shape { border-color: #ff7e91; border-radius: 2px; transform: rotate(45deg); }
+.stateCard[data-state="half-open"] .shape { width: 0; height: 0; border: 0; border-right: 10px solid transparent; border-bottom: 18px solid #ffd36a; border-left: 10px solid transparent; }
+.stateCard small { display: block; color: #73849b; font: 700 .58rem var(--font-mono); letter-spacing: .12em; }
+.stateCard strong { display: block; margin: .2rem 0 .45rem; color: #e3ecf7; font: 750 1.05rem var(--font-mono); }
+.stateCard p { color: #91a2b8; font-size: .73rem; line-height: 1.55; }
+.arrow { margin: 0 .65rem; color: #78bad2; font: 500 1.6rem var(--font-mono); }
+.returnPaths { display: flex; justify-content: center; gap: 2rem; padding: 1rem; color: #91a3ba; font: 650 .66rem var(--font-mono); }
+.serviceFlow { display: grid; grid-template-columns: 1fr minmax(150px, 1.4fr) 1fr; align-items: center; max-width: 780px; margin: .65rem auto 0; }
+.clientNode, .dependencyNode { padding: .8rem 1rem; border: 1px solid #40516a; border-radius: 12px; background: #111c2c; }
+.clientNode span, .dependencyNode span { display: block; color: #75869d; font: 700 .56rem var(--font-mono); letter-spacing: .1em; } .clientNode strong, .dependencyNode strong { color: #dce6f2; font-size: .76rem; }
+.route { position: relative; text-align: center; } .route i { display: block; border-top: 3px solid #63d6aa; } .route b { position: relative; top: -.7rem; padding: .2rem .5rem; background: #09101a; color: #75e1b7; font: 700 .6rem var(--font-mono); }
+.serviceFlow[data-state="open"] .route i { border-color: #ff7186; border-top-style: dashed; } .serviceFlow[data-state="open"] .route b { color: #ff8a9b; }
+.serviceFlow[data-state="half-open"] .route i { border-color: #ffd36a; border-top-style: dotted; } .serviceFlow[data-state="half-open"] .route b { color: #ffd36a; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #29364a; border-bottom: 1px solid #29364a; background: #101a29; }
+.metrics div { padding: .9rem 1.2rem; border-right: 1px solid #29364a; } .metrics div:last-child { border: 0; }
+.metrics span { display: block; color: #74869e; font: 700 .57rem var(--font-mono); letter-spacing: .08em; } .metrics strong { color: #dce8f6; font: 650 1.15rem var(--font-mono); }
+.controls { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding: 1.15rem 2.25rem; background: #0d1623; }
+.transport, .settings { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
+.controls button, .controls select { min-height: 40px; padding: 0 .8rem; border: 1px solid #3a4a61; border-radius: 9px; background: #131f31; color: #cfdaea; font: 650 .74rem var(--font-sans); cursor: pointer; }
+.controls button:disabled { cursor: not-allowed; opacity: .38; } .controls button:focus-visible, .controls select:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.controls .failureOn { border-color: #a84255; background: #28151c; color: #ff93a3; }
+.settings label { color: #91a2b8; font-size: .72rem; } .settings select { min-height: 36px; margin-left: .35rem; }
+.guidance { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-top: 1px solid #29364a; background: #29364a; }
+.guidance > div { padding: 1.1rem 2.25rem; background: #09101a; } .guidance span { color: #8be0ff; font: 700 .62rem var(--font-mono); letter-spacing: .1em; } .guidance p { margin-top: .35rem; color: #91a3ba; font-size: .75rem; line-height: 1.65; }
+@media (max-width: 820px) { .header { padding: 1.4rem; } .currentState { display: none; } .decision { padding: .8rem 1.4rem; } .stage { overflow-x: auto; padding: 1.4rem; } .flow, .returnPaths, .serviceFlow { min-width: 720px; } .metrics { grid-template-columns: 1fr 1fr; } .metrics div:nth-child(2) { border-right: 0; } .controls { padding: 1rem 1.4rem; } .guidance { grid-template-columns: 1fr; } .guidance > div { padding: 1rem 1.4rem; } }
+@media (prefers-reduced-motion: reduce) { .stateCard { transition: none; } }
