@@ -1,38 +1,72 @@
 import { describe, expect, it } from "vitest";
-import { getStateExplanation, initialPrivateEndpointState, privateEndpointReducer, type PrivateEndpointState } from "./private-link-private-endpoint-scenario";
+import {
+  getChallengeScore,
+  initialPrivateEndpointState,
+  privateEndpointReducer,
+  TOTAL_REQUESTS,
+  type PrivateEndpointState,
+} from "./private-link-private-endpoint-scenario";
 
-function complete(state: PrivateEndpointState) {
-  let next = privateEndpointReducer(state, { type: "start" });
-  next = privateEndpointReducer(next, { type: "tick" });
-  next = privateEndpointReducer(next, { type: "tick" });
-  return privateEndpointReducer(next, { type: "tick" });
+function start(state = initialPrivateEndpointState) {
+  return privateEndpointReducer(state, { type: "start" });
 }
 
-describe("privateEndpointReducer", () => {
-  it("Private Endpoint が有効なら private 経路で完了する", () => {
-    const state = complete(initialPrivateEndpointState);
-    expect(state).toMatchObject({ playback: "completed", step: 3, outcome: "private" });
-    expect(getStateExplanation(state)).toContain("Public Internet を通らず");
+function preparePrivatePath(state = start()) {
+  return privateEndpointReducer(state, { type: "toggle-endpoint" });
+}
+
+describe("プライベート・パス", () => {
+  it("3 Request を Private Endpoint 経由で完了すると勝利する", () => {
+    let state = preparePrivatePath();
+    for (let count = 0; count < TOTAL_REQUESTS; count += 1) {
+      state = privateEndpointReducer(state, { type: "send-request" });
+    }
+    expect(state).toMatchObject({ phase: "won", completedRequests: 3, attempts: 3 });
+    expect(state.lastResult?.outcome).toBe("private");
+    expect(getChallengeScore(state)).toEqual({ safety: 100, accuracy: 100, availability: 100, total: 100, rank: "S" });
   });
 
-  it("Endpoint が無効でも比較用 Public 経路が有効なら public 経路で完了する", () => {
-    const disabled = privateEndpointReducer(initialPrivateEndpointState, { type: "set-endpoint", enabled: false });
-    const comparable = privateEndpointReducer(disabled, { type: "set-public-comparison", enabled: true });
-    expect(complete(comparable).outcome).toBe("public");
+  it("Public Route へ流出すると直ちに失敗する", () => {
+    let state = start();
+    state = privateEndpointReducer(state, { type: "select-route", route: "public" });
+    state = privateEndpointReducer(state, { type: "send-request" });
+    expect(state).toMatchObject({ phase: "lost", completedRequests: 0, attempts: 1 });
+    expect(state.lastResult?.outcome).toBe("public");
+    expect(getChallengeScore(state).safety).toBe(0);
   });
 
-  it("利用可能な経路がなければ通信を遮断する", () => {
-    const disabled = privateEndpointReducer(initialPrivateEndpointState, { type: "set-endpoint", enabled: false });
-    expect(complete(disabled).outcome).toBe("blocked");
+  it("Endpoint 未配置の Private Route は遮断され、修正して続行できる", () => {
+    let state = start();
+    state = privateEndpointReducer(state, { type: "send-request" });
+    expect(state).toMatchObject({ phase: "playing", completedRequests: 0, blockedAttempts: 1 });
+    expect(state.lastResult?.outcome).toBe("blocked");
+
+    state = privateEndpointReducer(state, { type: "toggle-endpoint" });
+    state = privateEndpointReducer(state, { type: "send-request" });
+    expect(state).toMatchObject({ completedRequests: 1, attempts: 2 });
+    expect(getChallengeScore(state).accuracy).toBe(50);
   });
 
-  it("Pause 中の tick では状態を変更しない", () => {
-    const paused = privateEndpointReducer(privateEndpointReducer(initialPrivateEndpointState, { type: "start" }), { type: "pause" });
-    expect(privateEndpointReducer(paused, { type: "tick" })).toBe(paused);
+  it("Pause 中は通信確認も設定変更も受け付けない", () => {
+    const paused = privateEndpointReducer(start(), { type: "pause" });
+    expect(privateEndpointReducer(paused, { type: "send-request" })).toBe(paused);
+    expect(privateEndpointReducer(paused, { type: "toggle-endpoint" })).toBe(paused);
   });
 
-  it("Reset で合成した初期状態へ戻る", () => {
-    const changed = complete({ ...initialPrivateEndpointState, endpointEnabled: false, comparePublicRoute: true });
-    expect(privateEndpointReducer(changed, { type: "reset" })).toEqual(initialPrivateEndpointState);
+  it("Reset は選択中のモードを保って固定初期状態へ戻す", () => {
+    let state: PrivateEndpointState = privateEndpointReducer(initialPrivateEndpointState, { type: "select-mode", mode: "challenge" });
+    state = preparePrivatePath(state);
+    state = privateEndpointReducer(state, { type: "send-request" });
+    expect(privateEndpointReducer(state, { type: "reset" })).toEqual({
+      ...initialPrivateEndpointState,
+      mode: "challenge",
+    });
+  });
+
+  it("終了後の追加 Request は状態を変えない", () => {
+    let state = start();
+    state = privateEndpointReducer(state, { type: "select-route", route: "public" });
+    state = privateEndpointReducer(state, { type: "send-request" });
+    expect(privateEndpointReducer(state, { type: "send-request" })).toBe(state);
   });
 });

@@ -2,14 +2,14 @@ import type { DesignTemplate } from "../../model";
 
 const template = {
   slug: "private-link-private-endpoint",
-  name: "Private Link / Private Endpoint",
-  summary: "Private Subnet から Private Endpoint を経由して Managed Service へ到達する、非公開経路と Public 経路の違いを学びます。",
+  name: "プライベート・パス",
+  summary: "Private Endpoint を配置して経路を選び、Public Internet を避けて全 Request を届ける学習ミニゲームです。",
   primaryCategory: "network-connectivity",
   tags: ["Private Endpoint", "Private Path", "Network & Connectivity"],
-  concepts: ["Private Link", "Private Endpoint", "Public route comparison"],
+  concepts: ["Private Link", "Private Endpoint", "Private / Public route decision"],
   difficulty: "Beginner",
   status: "available",
-  motions: ["Request flow", "State transition"],
+  motions: ["Request flow", "Round result", "Score feedback"],
   actions: ["Play", "Pause", "Reset"],
   href: "/templates/network-connectivity/private-link-private-endpoint",
 } as const satisfies DesignTemplate;
