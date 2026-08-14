@@ -1,120 +1,92 @@
 "use client";
 
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import {
-  getChallengeScore,
-  getGuidance,
-  getResultExplanation,
-  initialPrivateEndpointState,
-  privateEndpointReducer,
-  TOTAL_REQUESTS,
+  hasReachedPhase,
+  initialPrivatePathState,
+  privatePathReducer,
+  type PrivatePathPhase,
 } from "@/lib/scenarios/network-connectivity/private-link-private-endpoint/private-link-private-endpoint-scenario";
 import styles from "./private-link-private-endpoint-demo.module.css";
 
-const phaseLabels = {
-  ready: "開始前",
-  playing: "設計中",
-  paused: "一時停止",
-  won: "成功",
-  lost: "失敗",
-} as const;
+const phaseCopy: Record<PrivatePathPhase, { label: string; detail: string }> = {
+  ready: { label: "READY", detail: "Client がリクエストを準備" },
+  resolving: { label: "PRIVATE DNS", detail: "名前をプライベート IP に解決" },
+  connecting: { label: "ENDPOINT", detail: "Private Endpoint に接続" },
+  transferring: { label: "PRIVATE LINK", detail: "隔離された経路で転送" },
+  delivered: { label: "DELIVERED", detail: "Service が受信" },
+};
+
+const nodeBase = "relative z-10 flex min-h-36 flex-col items-center justify-center rounded-2xl border-2 bg-slate-950/90 px-4 py-5 text-center shadow-2xl";
 
 export function PrivateLinkPrivateEndpointDemo() {
-  const [state, dispatch] = useReducer(privateEndpointReducer, initialPrivateEndpointState);
-  const score = getChallengeScore(state);
-  const isFinished = state.phase === "won" || state.phase === "lost";
-  const controlsEnabled = state.phase === "ready" || state.phase === "playing";
+  const [state, dispatch] = useReducer(privatePathReducer, initialPrivatePathState);
+  const endpointActive = hasReachedPhase(state.phase, "connecting");
+  const serviceActive = state.phase === "delivered";
+
+  useEffect(() => {
+    const timer = window.setInterval(() => dispatch({ type: "advance" }), 1500);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
-    <section className={styles.game} aria-labelledby="private-path-title">
-      <header className={styles.header}>
+    <section className="overflow-hidden rounded-3xl border border-slate-700 bg-[#07101d] shadow-[0_28px_80px_rgba(0,0,0,.45)]" aria-labelledby="private-path-title">
+      <header className="flex flex-col gap-5 border-b border-slate-700/80 px-5 py-6 sm:px-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className={styles.eyebrow}>NETWORK &amp; CONNECTIVITY · GAME 19</p>
-          <h2 id="private-path-title">プライベート・パス</h2>
-          <p>あなたは「非公開経路設計者」。3 件の Request を公開経路へ流出させず Managed Service へ届けます。</p>
+          <p className="font-mono text-[.68rem] font-bold tracking-[.2em] text-emerald-300">NETWORK CONNECTIVITY · AUTO SCENE 19</p>
+          <h2 id="private-path-title" className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">プライベート・パス</h2>
+          <p className="mt-3 max-w-2xl leading-7 text-slate-400">Client の通信は Public Internet へ出ず、Private Endpoint と Private Link を通って Service に到達します。</p>
         </div>
-        <div className={`${styles.status} ${styles[state.phase]}`} aria-live="polite">
-          <span>ゲーム状態</span><strong>{phaseLabels[state.phase]}</strong>
+        <div className="min-w-52 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3" aria-live="polite" aria-atomic="true">
+          <span className="block font-mono text-[.62rem] tracking-widest text-emerald-300">CURRENT STATE · LOOP {state.cycle.toString().padStart(2, "0")}</span>
+          <strong className="mt-1 block text-sm text-white">{phaseCopy[state.phase].label} — {phaseCopy[state.phase].detail}</strong>
         </div>
       </header>
 
-      <section className={styles.briefing} aria-labelledby="mission-title">
-        <div><span>ROLE</span><strong id="mission-title">非公開経路設計者</strong></div>
-        <div><span>OBJECTIVE</span><strong>Public Internet を避けて到達</strong></div>
-        <div><span>WIN</span><strong>全 3 Request を Private Endpoint 経由</strong></div>
-        <div><span>FAIL</span><strong>Public Route への流出</strong></div>
-      </section>
-
-      <div className={styles.modeBar}>
-        <div role="group" aria-label="ゲームモード">
-          <button type="button" aria-pressed={state.mode === "guided"} onClick={() => dispatch({ type: "select-mode", mode: "guided" })}>Guided</button>
-          <button type="button" aria-pressed={state.mode === "challenge"} onClick={() => dispatch({ type: "select-mode", mode: "challenge" })}>Challenge</button>
-        </div>
-        <p>{state.mode === "guided" ? "操作と理由を段階的に案内します。" : "安全性 50%・正確性 30%・可用性 20% で採点します。"}</p>
+      <div className="grid grid-cols-2 border-b border-slate-700/80 bg-slate-900/60 text-center sm:grid-cols-4">
+        {["01 Resolve", "02 Connect", "03 Transfer", "04 Deliver"].map((step, index) => (
+          <div key={step} className="border-slate-700 px-3 py-3 font-mono text-[.65rem] font-bold tracking-wider text-slate-400 odd:border-r sm:border-r sm:last:border-r-0">
+            {step}<span className="ml-2 text-emerald-300" aria-hidden="true">{PRIVATE_STEP_DONE[state.phase][index] ? "◆" : "◇"}</span>
+          </div>
+        ))}
       </div>
 
-      <div className={styles.dashboard}>
-        <div className={styles.playArea}>
-          <div className={styles.objectiveBar}>
-            <div><span>CURRENT GOAL</span><strong>Private Endpoint を通して通信確認</strong></div>
-            <div><span>REMAINING</span><strong>{TOTAL_REQUESTS - state.completedRequests} Request</strong></div>
-          </div>
+      <div className={`relative min-h-[650px] overflow-hidden bg-[linear-gradient(rgba(51,65,85,.22)_1px,transparent_1px),linear-gradient(90deg,rgba(51,65,85,.22)_1px,transparent_1px)] bg-[size:28px_28px] p-4 sm:min-h-[440px] sm:p-7 ${styles.board}`}>
+        <div className="absolute inset-x-[7%] top-1/2 hidden h-px bg-emerald-300/30 sm:block" aria-hidden="true" />
+        <div className={`absolute left-[16%] top-[calc(50%-5px)] hidden h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_18px_#6ee7b7] sm:block ${styles.packet}`} aria-hidden="true" />
 
-          <div className={styles.network} aria-label="Client から Managed Service までの選択中の通信経路">
-            <div className={`${styles.node} ${styles.client}`}><span>PRIVATE NETWORK</span><strong>Client</strong><small>合成 Request</small></div>
-            <div className={`${styles.route} ${state.selectedRoute === "private" ? styles.routeSelected : ""}`}><span>━━ PRIVATE ROUTE ━━▶</span></div>
-            <div className={`${styles.node} ${styles.endpoint} ${state.endpointPlaced ? styles.endpointReady : styles.endpointMissing}`}>
-              <span>CONNECTION TARGET</span><strong>Private Endpoint</strong><small>{state.endpointPlaced ? "配置済み ✓" : "未配置 ◇"}</small>
-            </div>
-            <div className={`${styles.route} ${state.selectedRoute === "private" && state.endpointPlaced ? styles.routeSelected : ""}`}><span>━━ PRIVATE LINK ━━▶</span></div>
-            <div className={`${styles.node} ${styles.service}`}><span>MANAGED SERVICE</span><strong>Data Service</strong><small>説明用の合成サービス</small></div>
-            <div className={`${styles.publicLane} ${state.selectedRoute === "public" ? styles.publicSelected : ""}`}>
-              <strong>PUBLIC INTERNET</strong><span>┄┄ Public Route ┄┄▶</span><small>{state.selectedRoute === "public" ? "選択中 ⚠" : "未選択"}</small>
-            </div>
-          </div>
-
-          <div className={styles.actions} aria-label="ゲーム固有操作">
-            <button type="button" aria-pressed={state.endpointPlaced} disabled={!controlsEnabled} onClick={() => dispatch({ type: "toggle-endpoint" })}>
-              <span>1 · ENDPOINT</span><strong>{state.endpointPlaced ? "Endpoint を撤去" : "Endpoint を配置"}</strong>
-            </button>
-            <fieldset disabled={!controlsEnabled}>
-              <legend>2 · ROUTE SELECT</legend>
-              <label><input type="radio" name="route" checked={state.selectedRoute === "private"} onChange={() => dispatch({ type: "select-route", route: "private" })} /> Private Route</label>
-              <label><input type="radio" name="route" checked={state.selectedRoute === "public"} onChange={() => dispatch({ type: "select-route", route: "public" })} /> Public Route</label>
-            </fieldset>
-            <button className={styles.verify} type="button" disabled={state.phase !== "playing"} onClick={() => dispatch({ type: "send-request" })}>
-              <span>3 · VERIFY</span><strong>通信確認を実行</strong>
-            </button>
-          </div>
+        <div className="relative grid h-full grid-cols-1 items-center gap-8 sm:min-h-[380px] sm:grid-cols-[1fr_.55fr_1.15fr_.55fr_1fr] sm:gap-3">
+          <article className={`${nodeBase} border-cyan-400/60`}>
+            <span className="text-3xl" aria-hidden="true">▣</span><span className="mt-2 font-mono text-[.58rem] tracking-widest text-cyan-300">PRIVATE NETWORK</span><strong className="mt-1">Client</strong><small className="mt-2 text-slate-400">10.24.1.8 · synthetic</small>
+          </article>
+          <div className="text-center font-mono text-[.6rem] font-bold tracking-wider text-emerald-300"><span className="block sm:hidden">↓</span><span>PRIVATE IP</span><span className="hidden sm:block">······▶</span></div>
+          <article className={`${nodeBase} ${endpointActive ? "border-emerald-300 shadow-[0_0_28px_rgba(110,231,183,.22)]" : "border-dashed border-slate-500"}`}>
+            <span className="text-3xl" aria-hidden="true">⬡</span><span className="mt-2 font-mono text-[.58rem] tracking-widest text-emerald-300">CONNECTION TARGET</span><strong className="mt-1">Private Endpoint</strong><small className="mt-2 text-slate-400">{endpointActive ? "CONNECTED · 10.24.2.4" : "STANDBY · private IP"}</small>
+          </article>
+          <div className="text-center font-mono text-[.6rem] font-bold tracking-wider text-emerald-300"><span className="block sm:hidden">↓</span><span>PRIVATE LINK</span><span className="hidden sm:block">══════▶</span></div>
+          <article className={`${nodeBase} ${serviceActive ? "border-violet-300 shadow-[0_0_28px_rgba(196,181,253,.25)]" : "border-violet-400/50"}`}>
+            <span className="text-3xl" aria-hidden="true">◆</span><span className="mt-2 font-mono text-[.58rem] tracking-widest text-violet-300">SERVICE NETWORK</span><strong className="mt-1">Service</strong><small className="mt-2 text-slate-400">private ingress · synthetic</small>
+          </article>
         </div>
 
-        <aside className={styles.sidePanel} aria-labelledby="feedback-title">
-          {state.mode === "guided" && <div className={styles.guide}><span>GUIDED NEXT STEP</span><p>{getGuidance(state)}</p></div>}
-          <div className={styles.feedback}>
-            <span>WHY THIS RESULT?</span><h3 id="feedback-title">判断の理由</h3>
-            <p aria-live="polite">{getResultExplanation(state)}</p>
-            {state.lastResult && <strong className={styles.resultLabel}>結果: {state.lastResult.outcome === "private" ? "非公開経路で到達 ✓" : state.lastResult.outcome === "public" ? "公開経路へ流出 ✕" : "Endpoint 未配置で遮断 ◇"}</strong>}
-          </div>
-          <ol className={styles.progress} aria-label="Request の進捗">
-            {Array.from({ length: TOTAL_REQUESTS }, (_, index) => <li key={index} className={index < state.completedRequests ? styles.complete : ""}><span>Request {index + 1}</span><strong>{index < state.completedRequests ? "PRIVATE ✓" : "WAITING ◇"}</strong></li>)}
-          </ol>
+        <aside className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-4 rounded-xl border border-dashed border-rose-400/50 bg-rose-950/20 px-4 py-3 text-rose-200 sm:bottom-6 sm:left-[7%] sm:right-[7%]" aria-label="Public Internet is not used">
+          <div><strong className="block font-mono text-xs tracking-widest">PUBLIC INTERNET</strong><span className="mt-1 block text-xs text-rose-200/70">経路対象外 · NO EGRESS</span></div>
+          <span className="rounded-md border border-rose-300/60 px-3 py-1 font-mono text-xs font-bold">BLOCKED ×</span>
         </aside>
       </div>
 
-      {isFinished && <section className={`${styles.result} ${state.phase === "won" ? styles.resultWon : styles.resultLost}`} aria-labelledby="game-result-title">
-        <div><span>GAME RESULT</span><h3 id="game-result-title">{state.phase === "won" ? "ミッション成功" : "Public Route へ流出"}</h3><p>{state.phase === "won" ? "すべての Request が非公開経路で完了しました。" : "到達性だけでなく、どの境界を通るかが Private Link 設計の判断点です。"}</p></div>
-        {state.mode === "challenge" && <div className={styles.score}><strong>{score.total}<small>/100</small></strong><span>RANK {score.rank}</span><dl><div><dt>安全性 50%</dt><dd>{score.safety}</dd></div><div><dt>正確性 30%</dt><dd>{score.accuracy}</dd></div><div><dt>可用性 20%</dt><dd>{score.availability}</dd></div></dl></div>}
-        <button type="button" onClick={() => dispatch({ type: "reset" })}>同じシナリオに再挑戦</button>
-      </section>}
-
-      <footer className={styles.footer}>
-        <div className={styles.transport} aria-label="ゲーム操作">
-          <button type="button" onClick={() => dispatch({ type: "start" })} disabled={state.phase === "playing" || isFinished}>▶ Start</button>
-          <button type="button" onClick={() => dispatch({ type: "pause" })} disabled={state.phase !== "playing"}>Ⅱ Pause</button>
-          <button type="button" onClick={() => dispatch({ type: "reset" })}>↺ Reset</button>
-        </div>
-        <p>このゲームは固定シナリオと合成データのみを使用し、実環境への操作・性能・可用性・安全性を保証しません。</p>
+      <footer className="flex flex-col gap-3 border-t border-slate-700/80 bg-slate-900/60 px-5 py-4 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <p><span className="mr-2 text-emerald-300">●</span>自動再生中 · 約 7.5 秒で初期状態へ戻ります</p>
+        <p className="font-mono">VENDOR NEUTRAL · SYNTHETIC DATA</p>
       </footer>
     </section>
   );
 }
+
+const PRIVATE_STEP_DONE: Record<PrivatePathPhase, readonly boolean[]> = {
+  ready: [false, false, false, false],
+  resolving: [true, false, false, false],
+  connecting: [true, true, false, false],
+  transferring: [true, true, true, false],
+  delivered: [true, true, true, true],
+};
