@@ -21,6 +21,8 @@ export type TemplateAction =
   | "Pause"
   | "Reset"
   | "Deal request"
+  | "Select route"
+  | "Send"
   | "Adjust traffic"
   | "Inject failure";
 
