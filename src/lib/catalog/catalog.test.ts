@@ -9,7 +9,6 @@ describe("template catalog", () => {
   it("places available categories before planned categories", () => {
     const categories = getCatalogCategories();
     const firstPlannedIndex = categories.findIndex((category) => !category.isAvailable);
-
     expect(firstPlannedIndex).toBeGreaterThan(0);
     expect(categories.slice(0, firstPlannedIndex).every((category) => category.isAvailable)).toBe(true);
     expect(categories.slice(firstPlannedIndex).every((category) => !category.isAvailable)).toBe(true);
@@ -25,6 +24,6 @@ describe("template catalog", () => {
   it("pre-registers one isolated catalog entry for every template issue", () => {
     expect(designTemplates).toHaveLength(40);
     expect(new Set(designTemplates.map((template) => template.slug)).size).toBe(40);
-    expect(designTemplates.filter((template) => template.status === "available")).toHaveLength(20);
+    expect(designTemplates.filter((template) => template.status === "available")).toHaveLength(21);
   });
 });
