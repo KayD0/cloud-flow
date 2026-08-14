@@ -3,14 +3,14 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "dns-resolution-and-failover",
   name: "DNSレスキュー",
-  summary: "TTLキャッシュとDNS Failoverの因果を判断し、Clientの通信を到達可能なEndpointへ復旧する学習ミニゲームです。",
+  summary: "名前解決から正常 Endpoint への接続、障害検知後に代替 Endpoint へ切り替わる流れを自動再生します。",
   primaryCategory: "traffic-routing",
   tags: ["DNS", "TTL", "Failover"],
-  concepts: ["DNS resolution", "Resolver cache", "TTL", "Endpoint failover"],
+  concepts: ["DNS resolution", "Resolver cache", "Health check", "Endpoint failover"],
   difficulty: "Beginner",
   status: "available",
-  motions: ["Client query", "Cached response", "Endpoint request", "State transition"],
-  actions: ["Play", "Pause", "Reset", "Inject failure"],
+  motions: ["DNS query", "Endpoint request", "Failure detection", "Route transition"],
+  actions: [],
   href: "/templates/traffic-routing/dns-resolution-and-failover",
 } as const satisfies DesignTemplate;
 
