@@ -3,13 +3,13 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "container-lifecycle",
   name: "Container Lifecycle",
-  summary: "Containerの作成、起動、処理、停止、再起動をたどります。",
+  summary: "Container の作成、起動、処理、停止、再起動というライフサイクルを段階的に追跡します。",
   primaryCategory: "compute-scaling",
-  tags: ["Container Lifecycle", "compute-scaling"],
-  concepts: ["Container Lifecycle"],
+  tags: ["Container Lifecycle", "Compute & Scaling", "Vendor neutral"],
+  concepts: ["Container Lifecycle", "State transition", "Restart"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
+  status: "available",
+  motions: ["Start transition", "Processing", "Stop transition", "Restart transition"],
   actions: ["Play", "Pause", "Reset"],
   href: "/templates/compute-scaling/container-lifecycle",
 } as const satisfies DesignTemplate;

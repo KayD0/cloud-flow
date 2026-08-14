@@ -8,9 +8,9 @@ const template = {
   tags: ["Weighted Routing", "traffic-routing"],
   concepts: ["Weighted Routing"],
   difficulty: "Beginner",
-  status: "planned",
+  status: "available",
   motions: ["State transition"],
-  actions: ["Play", "Pause", "Reset"],
+  actions: ["Play", "Pause", "Reset", "Adjust traffic"],
   href: "/templates/traffic-routing/weighted-routing",
 } as const satisfies DesignTemplate;
 

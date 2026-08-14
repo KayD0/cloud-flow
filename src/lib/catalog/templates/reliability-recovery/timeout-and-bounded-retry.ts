@@ -3,14 +3,14 @@ import type { DesignTemplate } from "../../model";
 const template = {
   slug: "timeout-and-bounded-retry",
   name: "Timeout and Bounded Retry",
-  summary: "Timeout後の上限付きRetryとBackoff、成功・打ち切りを示します。",
+  summary: "Timeoutを契機に、上限付きRetryとBackoff、成功または打ち切りまでの判断を観察します。",
   primaryCategory: "reliability-recovery",
   tags: ["Timeout and Bounded Retry", "reliability-recovery"],
-  concepts: ["Timeout and Bounded Retry"],
+  concepts: ["Timeout", "Bounded Retry", "Backoff"],
   difficulty: "Beginner",
-  status: "planned",
-  motions: ["State transition"],
-  actions: ["Play", "Pause", "Reset"],
+  status: "available",
+  motions: ["Request flow", "State transition", "Backoff"],
+  actions: ["Play", "Pause", "Reset", "Inject failure"],
   href: "/templates/reliability-recovery/timeout-and-bounded-retry",
 } as const satisfies DesignTemplate;
 

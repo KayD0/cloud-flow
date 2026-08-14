@@ -15,6 +15,7 @@ export interface LoadBalancerState extends ScenarioControls {
   nextRequestId: number;
   requests: readonly RequestToken[];
   completedRequests: number;
+  rejectedRequests: number;
 }
 
 export type LoadBalancerAction =
@@ -40,6 +41,7 @@ export const initialLoadBalancerState: LoadBalancerState = {
   nextRequestId: 1,
   requests: [],
   completedRequests: 0,
+  rejectedRequests: 0,
 };
 
 function chooseHealthyServer(
@@ -88,6 +90,7 @@ function tick(state: LoadBalancerState): LoadBalancerState {
     nextServerIndex: nextIndex,
     nextRequestId,
     completedRequests: state.completedRequests + completed,
+    rejectedRequests: state.rejectedRequests + (created.length === 0 ? state.traffic : 0),
   };
 }
 
@@ -103,9 +106,9 @@ export function loadBalancerReducer(
     case "reset":
       return initialLoadBalancerState;
     case "set-speed":
-      return { ...state, speed: action.speed };
+      return { ...state, speed: Math.min(2, Math.max(0.5, action.speed)) };
     case "set-traffic":
-      return { ...state, traffic: action.traffic };
+      return { ...state, traffic: Math.min(5, Math.max(1, Math.round(action.traffic))) };
     case "fail":
       return {
         ...state,

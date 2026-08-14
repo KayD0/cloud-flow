@@ -1,0 +1,44 @@
+.demo { overflow: hidden; border: 1px solid #263348; border-radius: 24px; background: #0b111d; box-shadow: 0 28px 80px #02050b80; }
+.header { display: flex; justify-content: space-between; gap: 2rem; padding: 2rem 2.25rem 1.4rem; border-bottom: 1px solid #263348; }
+.header h2 { margin: .25rem 0 .55rem; font-size: clamp(1.45rem, 3vw, 2.1rem); letter-spacing: -.03em; }
+.eyebrow, .panelLabel { color: #69e7b3; font: 700 .7rem/1.2 var(--font-mono); letter-spacing: .16em; }
+.description { max-width: 690px; color: #98a8be; line-height: 1.75; }
+.outcome { min-width: 190px; align-self: center; padding: .8rem 1rem; border: 1px solid #34445c; border-radius: 14px; background: #101a2b; }
+.outcome span { display: block; color: #718198; font: 600 .62rem var(--font-mono); letter-spacing: .12em; }
+.outcome strong { display: block; margin-top: .3rem; color: #dce6f4; font: 700 .76rem var(--font-mono); }
+.outcome.private { border-color: #55d9a4; } .outcome.private strong { color: #69e7b3; }
+.outcome.public { border-color: #f2b84b; } .outcome.public strong { color: #ffd071; }
+.outcome.blocked { border-color: #ff687d; } .outcome.blocked strong { color: #ff8293; }
+.workspace { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(235px, 1fr); }
+.diagram { position: relative; display: grid; grid-template-columns: 1fr minmax(70px, .55fr) 1fr minmax(70px, .55fr) 1fr; align-items: center; min-height: 390px; padding: 2.5rem 2rem 7rem; background-image: linear-gradient(#1c293b55 1px, transparent 1px), linear-gradient(90deg, #1c293b55 1px, transparent 1px); background-size: 28px 28px; }
+.node { position: relative; z-index: 2; min-height: 120px; padding: 1.2rem 1rem; border: 2px solid #40516b; border-radius: 18px; background: #121d2e; text-align: center; transition: border-color .25s, box-shadow .25s; }
+.node::before { content: "◇"; display: block; margin-bottom: .4rem; color: #8392a8; font-size: 1.45rem; }
+.node strong, .node small { display: block; } .node strong { color: #dae4f2; font-size: .92rem; } .node small { margin-top: .35rem; color: #8190a5; font: 650 .62rem var(--font-mono); }
+.nodeKind { color: #718198; font: 700 .52rem var(--font-mono); letter-spacing: .12em; }
+.endpoint { border-style: double; border-width: 4px; } .endpoint::before { content: "⬡"; }
+.activeNode { border-color: #55d9a4; box-shadow: 0 0 22px #55d9a433; } .activeNode::before { color: #69e7b3; }
+.disabledNode { border-color: #ff687d; border-style: dashed; opacity: .72; } .disabledNode small { color: #ff8293; }
+.connector { position: relative; z-index: 1; height: 2px; background: repeating-linear-gradient(90deg, #40516b 0 7px, transparent 7px 13px); }
+.connector::after { content: "▶"; position: absolute; right: -4px; top: -8px; color: #40516b; font-size: .75rem; }
+.connector span { position: absolute; top: -1.5rem; width: 100%; color: #718198; text-align: center; font: 700 .52rem var(--font-mono); }
+.privateLine { height: 3px; background: #55d9a4; box-shadow: 0 0 8px #55d9a477; } .privateLine::after, .privateLine span { color: #69e7b3; }
+.publicRoute { position: absolute; right: 8%; bottom: 2rem; left: 8%; display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; border: 1px dashed #4b5870; border-radius: 10px; color: #66758b; background: #0b111de8; font: 650 .62rem var(--font-mono); }
+.publicBadge { color: #8897ab; } .publicActive { border-color: #f2b84b; color: #ffd071; } .blockedRoute { border-color: #ff687d; color: #ff8293; }
+.packet { position: absolute; z-index: 3; top: calc(50% - 3.5rem); left: 11%; color: #fff; text-shadow: 0 0 8px #69e7b3; transition: left .75s linear; }
+.step1 { left: 27%; } .step2 { left: 52%; } .step3 { left: 82%; }
+.explanation { padding: 2rem; border-left: 1px solid #263348; background: #0e1726; }
+.explanation h3 { margin: .35rem 0 .8rem; color: #e2eaf5; } .explanation > p:not(.panelLabel) { min-height: 7.5rem; color: #a7b5c8; line-height: 1.75; }
+.explanation dl { margin: 1rem 0 0; } .explanation dl div { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 0; border-top: 1px solid #263348; }
+.explanation dt, .explanation dd { font: 650 .7rem var(--font-mono); } .explanation dt { color: #75849a; } .explanation dd { margin: 0; color: #d0dae8; text-align: right; }
+.controls { display: flex; justify-content: space-between; gap: 1.5rem; padding: 1.25rem 2.25rem; border-top: 1px solid #263348; background: #0e1726; }
+.transport, .options { display: flex; flex-wrap: wrap; gap: .6rem; }
+.controls button { min-height: 42px; padding: 0 .95rem; border: 1px solid #34445c; border-radius: 9px; background: #131f31; color: #cbd7e7; font: 650 .76rem var(--font-sans); cursor: pointer; }
+.transport button:first-child { border-color: #3cb989; color: #74eabd; } .controls button:disabled { cursor: not-allowed; opacity: .38; }
+.controls button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.options button { display: flex; align-items: center; gap: .8rem; } .options button strong { color: #8190a5; font: 700 .64rem var(--font-mono); }
+.options button[aria-pressed="true"] { border-color: #55d9a4; background: #10251f; } .options button[aria-pressed="true"] strong { color: #69e7b3; }
+.note { display: flex; gap: 1rem; padding: 1rem 2.25rem 1.35rem; border-top: 1px solid #263348; color: #91a1b7; font-size: .78rem; line-height: 1.6; }
+.note strong { flex: 0 0 auto; color: #d7e1ee; }
+@media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } .explanation { border-top: 1px solid #263348; border-left: 0; } .explanation > p:not(.panelLabel) { min-height: 0; } .controls { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 680px) { .header { padding: 1.4rem; } .outcome { display: none; } .diagram { grid-template-columns: 1fr; gap: 1.75rem; min-height: auto; padding: 1.5rem 1.25rem 6.5rem; } .connector { width: 2px; height: 28px; margin: -.8rem auto; background: repeating-linear-gradient(#40516b 0 7px, transparent 7px 13px); } .connector::after { right: -5px; top: 20px; transform: rotate(90deg); } .connector span { top: 7px; left: 12px; width: max-content; text-align: left; } .privateLine { width: 3px; height: 28px; background: #55d9a4; } .packet { display: none; } .publicRoute { right: 1.25rem; bottom: 1.25rem; left: 1.25rem; align-items: flex-start; flex-direction: column; } .explanation, .controls, .note { padding: 1.25rem; } .options { width: 100%; } .options button { justify-content: space-between; width: 100%; } .note { flex-direction: column; gap: .35rem; } }
+@media (prefers-reduced-motion: reduce) { .packet, .node { transition: none; } }

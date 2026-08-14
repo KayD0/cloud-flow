@@ -1,0 +1,46 @@
+.demo { overflow: hidden; border: 1px solid #263c59; border-radius: 24px; background: #07101d; box-shadow: 0 28px 80px #02050b80; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1.6rem 2rem; border-bottom: 1px solid #263c59; background: #0a1525; }
+.header h2 { margin: .35rem 0 0; font-size: clamp(1.6rem, 3vw, 2.35rem); letter-spacing: -.04em; }
+.eyebrow { margin: 0; color: #63e6bd; font: 700 .65rem var(--font-geist-mono); letter-spacing: .16em; }
+.hud { display: flex; gap: .65rem; }
+.hud span { min-width: 106px; padding: .65rem .8rem; border: 1px solid #304964; border-radius: 8px; color: #7088a5; font: 700 .58rem var(--font-geist-mono); letter-spacing: .1em; }
+.hud strong { display: block; margin-top: .25rem; color: #74f0c5; font-size: .95rem; }
+.game { position: relative; height: 430px; overflow: hidden; background: radial-gradient(circle at 76% 50%, #193550 0, #0a1829 26%, #050b14 67%); }
+.stars, .stars::before, .stars::after { position: absolute; inset: 0; content: ""; background-image: radial-gradient(#b9ddff 1px, transparent 1px); background-size: 53px 47px; opacity: .25; animation: drift 4s linear infinite; }
+.stars::before { transform: translateX(19px); background-size: 83px 71px; opacity: .45; animation-duration: 7s; }
+.stars::after { transform: translateX(37px); background-size: 127px 89px; opacity: .3; animation-duration: 10s; }
+.threshold { position: absolute; z-index: 1; top: 0; bottom: 0; border-left: 1px dashed #ffcc6688; }
+.threshold span { position: absolute; top: 1rem; left: .6rem; width: max-content; color: #ffd37d; font: 700 .58rem var(--font-geist-mono); letter-spacing: .1em; }
+.enemyWave { position: absolute; top: 45px; right: 4%; width: 34%; height: 330px; }
+.enemy { position: absolute; right: 0; width: 26px; height: 26px; border: 2px solid #ff7088; transform: translateX(180px) rotate(45deg); background: #321526; box-shadow: 0 0 14px #ff4c70aa; animation: enemyAdvance 3.6s linear infinite; }
+.enemy:nth-child(1) { top: 0; animation-delay: -2.8s; }.enemy:nth-child(2) { top: 76px; right: 28px; animation-delay: -1.3s; animation-duration: 3.2s; }
+.enemy:nth-child(3) { top: 152px; right: 8px; animation-delay: -3.4s; animation-duration: 3.9s; }.enemy:nth-child(4) { top: 228px; right: 42px; animation-delay: -.6s; animation-duration: 3.35s; }
+.enemy:nth-child(5) { top: 38px; right: 82px; animation-delay: -1.9s; animation-duration: 4.1s; }.enemy:nth-child(6) { top: 190px; right: 94px; animation-delay: -3s; animation-duration: 3.5s; }
+.enemy:nth-child(7) { top: 285px; right: 24px; animation-delay: -2.2s; animation-duration: 3.75s; }.enemy:nth-child(8) { top: 114px; right: 128px; animation-delay: -1s; animation-duration: 4s; }
+.enemy::before, .enemy::after { position: absolute; content: ""; background: #ff8ca0; }
+.enemy::before { width: 8px; height: 8px; top: 7px; left: 7px; }
+.enemy::after { width: 38px; height: 2px; top: 10px; left: -8px; }
+.squadron { position: absolute; z-index: 3; inset: 40px auto 35px 7%; width: 40%; }
+.fighter { --lane: 0; position: absolute; top: calc(var(--lane) * 68px); left: calc((var(--lane) % 2) * 70px); display: flex; align-items: center; gap: .7rem; transition: opacity .45s ease, transform .45s ease; }
+.fighter[data-status="launching"] { opacity: .55; transform: translateX(-75px); }
+.fighter[data-status="draining"] { opacity: .35; transform: translateX(-100px); }
+.fighter small { color: #91abc5; font: 700 .58rem var(--font-geist-mono); letter-spacing: .08em; }
+.jet { position: relative; display: block; width: 58px; height: 30px; filter: drop-shadow(0 0 9px #58e7c8aa); }
+.jet::before { position: absolute; left: 14px; top: 2px; width: 32px; height: 26px; content: ""; background: #69e7c1; clip-path: polygon(100% 50%, 12% 0, 28% 38%, 0 50%, 28% 62%, 12% 100%); }
+.jet::after { position: absolute; left: 1px; top: 11px; width: 18px; height: 8px; content: ""; background: linear-gradient(90deg, transparent, #5adfff); animation: exhaust .45s ease-in-out infinite alternate; }
+.jet i { position: absolute; z-index: 2; left: 27px; top: 11px; width: 10px; height: 8px; border-radius: 50%; background: #07101d; }
+.lasers i { --lane: 0; position: absolute; z-index: 2; top: calc(56px + var(--lane) * 68px); left: 28%; width: 110px; height: 2px; background: linear-gradient(90deg, #68f1ca, transparent); box-shadow: 0 0 8px #68f1ca; animation: shoot 1.15s linear infinite; animation-delay: calc(var(--lane) * -170ms); }
+.command { position: absolute; z-index: 4; right: 2rem; bottom: 1.3rem; padding: .75rem 1rem; border: 1px solid #385673; border-radius: 8px; background: #081523dd; text-align: right; }
+.command span { display: block; color: #6f8aa8; font: 700 .55rem var(--font-geist-mono); letter-spacing: .12em; }
+.command strong { display: block; margin-top: .28rem; color: #72e8c1; font: 700 .68rem var(--font-geist-mono); }
+.game[data-pressure="high"] .command { border-color: #d49655; }.game[data-pressure="high"] .command strong { color: #ffd078; }
+.readout { display: grid; grid-template-columns: 1.5fr 1fr 1fr; border-top: 1px solid #263c59; background: #0b1727; }
+.readout > div { padding: 1rem 1.25rem; }.readout > div + div { border-left: 1px solid #263c59; }
+.readout span { display: block; color: #6f849f; font: 700 .57rem var(--font-geist-mono); letter-spacing: .11em; }.readout strong { display: block; margin-top: .3rem; color: #d9e8f5; }
+.readout i { display: block; height: 4px; margin-top: .55rem; overflow: hidden; background: #1e3045; }.readout i b { display: block; height: 100%; background: linear-gradient(90deg, #5be3bc, #ffd16f, #ff6f89); transition: width .7s ease; }
+@keyframes drift { to { transform: translateX(-53px); } }
+@keyframes enemyAdvance { 0% { opacity: 0; transform: translateX(220px) rotate(45deg) scale(.78); } 12% { opacity: 1; } 78% { opacity: 1; } 92% { opacity: .25; transform: translateX(-430px) rotate(45deg) scale(1); } 100% { opacity: 0; transform: translateX(-510px) rotate(45deg) scale(.25); } }
+@keyframes exhaust { to { transform: scaleX(.55); opacity: .45; } }
+@keyframes shoot { from { transform: translateX(0); opacity: 0; } 15% { opacity: 1; } to { transform: translateX(380px); opacity: 0; } }
+@media (max-width: 700px) { .header { align-items: flex-start; padding: 1.3rem; }.hud span { min-width: 82px; }.game { height: 390px; }.squadron { left: 4%; width: 50%; }.fighter { left: calc((var(--lane) % 2) * 42px); }.fighter small { display: none; }.enemyWave { right: 1%; width: 35%; }.readout { grid-template-columns: 1fr 1fr; }.readout > div:last-child { grid-column: 1 / -1; border-top: 1px solid #263c59; border-left: 0; }.command { right: 1rem; bottom: 1rem; } }
+@media (prefers-reduced-motion: reduce) { .stars, .stars::before, .stars::after, .enemy, .jet::after, .lasers i { animation: none; }.enemy { opacity: 1; transform: rotate(45deg); } }
